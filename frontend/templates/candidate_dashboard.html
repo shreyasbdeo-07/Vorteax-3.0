@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VORTEXA | Candidate Dashboard</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/candidate_dashboard.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/candidate_dashboard.css') }}?v=3.5">
 </head>
 <body>
 
@@ -21,7 +22,7 @@
             <a href="#jobs">Find Jobs</a>
             <a href="#matches">Job Matches</a>
             <a href="#applications">My Applications</a>
-            <a href="#assessments">Skill Assessments</a>
+            <a href="/assessments">Skill Assessments</a>
         </nav>
 
         <a href="/logout" class="logout">Logout</a>
@@ -112,6 +113,33 @@
                 <p id="profileMessage" class="message" role="status" aria-live="polite"></p>
                 <button type="submit" class="primary-btn" id="saveProfileBtn">Save Profile</button>
             </form>
+
+            <div class="projects-section" style="margin-top: 35px; border-top: 1px solid var(--border); padding-top: 25px;">
+                <div class="section-heading" style="margin-bottom: 15px;">
+                    <div>
+                        <h3>🚀 Practical Experience & Projects</h3>
+                        <p style="color: var(--muted); font-size: 13px;">Showcase real-world projects to earn verified practical experience weighting in AI job matching.</p>
+                    </div>
+                    <button type="button" class="secondary-btn" id="toggleAddProjectBtn">+ Add New Project</button>
+                </div>
+                <div id="newProjectForm" style="display:none; background: #fafaff; border: 1px solid #e0ddff; padding: 18px; border-radius: 10px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px; color: var(--primary);">Add Practical Project</h4>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="projectTitle">Project Title *</label><input type="text" id="projectTitle" placeholder="e.g. E-Commerce Backend API"></div>
+                        <div class="form-group"><label for="projectTech">Tech Stack (comma separated) *</label><input type="text" id="projectTech" placeholder="e.g. Python, Flask, SQL, Docker"></div>
+                        <div class="form-group"><label for="projectGithub">GitHub Repository Link</label><input type="url" id="projectGithub" placeholder="https://github.com/..."></div>
+                        <div class="form-group"><label for="projectLive">Live Demo URL</label><input type="url" id="projectLive" placeholder="https://..."></div>
+                        <div class="form-group full-width"><label for="projectDesc">Project Description & Outcomes</label><textarea id="projectDesc" rows="2" placeholder="Briefly explain what was built, problem solved, and key features."></textarea></div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top: 12px;">
+                        <button type="button" class="primary-btn" id="saveProjectBtn">Save Project</button>
+                        <button type="button" class="secondary-btn" id="cancelProjectBtn">Cancel</button>
+                    </div>
+                </div>
+                <div id="projectsList" style="display: flex; flex-direction: column; gap: 12px;">
+                    <p class="empty-state" style="padding: 15px;">Loading projects...</p>
+                </div>
+            </div>
         </section>
 
         <section id="passport" class="panel">
@@ -131,11 +159,9 @@
                         Complete the required verification and skill assessments
                         to unlock your Skill Passport.
                     </p>
-                    <a href="#assessments" class="secondary-btn">
+                    <a href="/assessments" class="secondary-btn">
                         Go to Assessments
                     </a>
-                    <p id="passportCode" aria-live="polite"></p>
-                    <div id="passportSkills"></div>
                     <p id="passportCode" aria-live="polite"></p>
                     <div id="passportSkills"></div>
                 </div>
@@ -166,7 +192,61 @@
             <div class="section-heading">
                 <div>
                     <h2>Recommended Job Matches</h2>
-                    <p>Explore jobs that align with your skills and qualifications.</p>
+                    <p>Explore jobs ranked by our AI matching engine, complete with skill gaps and personalized learning roadmaps.</p>
+                </div>
+                <button class="secondary-btn" id="refreshMatchesBtn">Refresh Matches</button>
+            </div>
+
+            <!-- Dynamic "What-If" Skill Simulator -->
+            <div class="what-if-widget">
+                <div class="what-if-widget-top">
+                    <div class="what-if-info">
+                        <div class="what-if-pill-tag">🔮 AI CAREER SIMULATOR</div>
+                        <h3>Test Your Skill Upgrades</h3>
+                        <p>Click any skill below to preview how acquiring it boosts your job match scores and unlocks new roles.</p>
+                    </div>
+                    <div class="what-if-status-badge" id="simStatusBadge">
+                        <span class="status-dot"></span> Baseline View
+                    </div>
+                </div>
+
+                <div class="what-if-controls">
+                    <div class="sim-pill-group" id="whatIfPresets">
+                        <button type="button" class="sim-toggle-pill" data-skill="React"><span class="pill-sym">+</span> React</button>
+                        <button type="button" class="sim-toggle-pill" data-skill="Docker"><span class="pill-sym">+</span> Docker</button>
+                        <button type="button" class="sim-toggle-pill" data-skill="SQL"><span class="pill-sym">+</span> SQL</button>
+                        <button type="button" class="sim-toggle-pill" data-skill="Machine Learning"><span class="pill-sym">+</span> Machine Learning</button>
+                        <button type="button" class="sim-toggle-pill" data-skill="JavaScript"><span class="pill-sym">+</span> JavaScript</button>
+                        <button type="button" class="sim-toggle-pill" data-skill="Flask"><span class="pill-sym">+</span> Flask</button>
+                    </div>
+
+                    <div class="sim-custom-input-wrap">
+                        <input type="text" id="customSimSkill" placeholder="+ Add custom skill...">
+                        <button type="button" id="addSimSkillBtn">Add</button>
+                    </div>
+
+                    <div class="sim-actions-wrap">
+                        <button type="button" class="sim-run-btn" id="runSimulationBtn">⚡ Simulate Boost</button>
+                        <button type="button" class="sim-reset-btn" id="clearSimSkillsBtn" style="display:none;">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Simulation Results Ribbon -->
+                <div id="simulationBanner" class="sim-results-ribbon" style="display:none;">
+                    <div class="sim-ribbon-stat">
+                        <strong id="simUnlockedCount">0</strong>
+                        <span>Roles Upgraded</span>
+                    </div>
+                    <div class="sim-ribbon-divider"></div>
+                    <div class="sim-ribbon-stat">
+                        <strong id="simAvgBoost">+0.0%</strong>
+                        <span>Average Fit Boost</span>
+                    </div>
+                    <div class="sim-ribbon-divider"></div>
+                    <div class="sim-ribbon-text">
+                        <span>⚡ <strong>Simulation Preview Active:</strong> Match scores reflect your selected skills. Complete assessments to make them permanent.</span>
+                    </div>
+                    <button type="button" class="sim-ribbon-close" id="exitSimulationBtn">✕ Exit Preview</button>
                 </div>
             </div>
 
@@ -236,6 +316,6 @@
 
     </main>
 
-    <script src="{{ url_for('static', filename='js/candidate_dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/candidate_dashboard.js') }}?v=3.2"></script>
 </body>
 </html>

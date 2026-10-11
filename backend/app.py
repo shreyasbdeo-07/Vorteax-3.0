@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import os, re, secrets
 from database import get_connection
 from question_generator import generate_questions
+from seed_assessments import seed as seed_assessment_bank
 
 BACKEND_DIR = Path(__file__).resolve().parent
 BASE_DIR = BACKEND_DIR.parent
@@ -170,11 +171,31 @@ def save_profile():
         conn=db()
         with conn.cursor() as cur:
             cur.execute("UPDATE users SET full_name=%s,email=%s WHERE id=%s",(name,email,session["user_id"]))
-            cur.execute("INSERT INTO candidate_profiles(user_id,phone,experience,bio) VALUES(%s,%s,%s,%s) ON DUPLICATE KEY UPDATE phone=VALUES(phone),experience=VALUES(experience),bio=VALUES(bio)",(session["user_id"],phone,experience,bio))
-            cur.execute("INSERT INTO candidate_education(user_id,degree,branch,college,graduation_year) VALUES(%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE degree=VALUES(degree),branch=VALUES(branch),college=VALUES(college),graduation_year=VALUES(graduation_year)",(session["user_id"],degree,branch,college,year))
+            
+            # Upsert candidate_profiles
+            cur.execute("SELECT user_id FROM candidate_profiles WHERE user_id=%s",(session["user_id"],))
+            if cur.fetchone():
+                cur.execute("UPDATE candidate_profiles SET phone=%s,experience=%s,bio=%s WHERE user_id=%s",(phone,experience,bio,session["user_id"]))
+            else:
+                cur.execute("INSERT INTO candidate_profiles(user_id,phone,experience,bio) VALUES(%s,%s,%s,%s)",(session["user_id"],phone,experience,bio))
+
+            # Upsert candidate_education
+            cur.execute("SELECT user_id FROM candidate_education WHERE user_id=%s",(session["user_id"],))
+            if cur.fetchone():
+                cur.execute("UPDATE candidate_education SET degree=%s,branch=%s,college=%s,graduation_year=%s WHERE user_id=%s",(degree,branch,college,year,session["user_id"]))
+            else:
+                cur.execute("INSERT INTO candidate_education(user_id,degree,branch,college,graduation_year) VALUES(%s,%s,%s,%s,%s)",(session["user_id"],degree,branch,college,year))
+
+            # Update candidate_skills
             cur.execute("DELETE FROM candidate_skills WHERE user_id=%s",(session["user_id"],))
             for skill in skills:
-                cur.execute("INSERT INTO skills(name) VALUES(%s) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)",(skill,)); sid=cur.lastrowid
+                cur.execute("SELECT id FROM skills WHERE name=%s",(skill,))
+                srow=cur.fetchone()
+                if srow:
+                    sid=srow["id"]
+                else:
+                    cur.execute("INSERT INTO skills(name) VALUES(%s)",(skill,))
+                    sid=cur.lastrowid
                 cur.execute("INSERT INTO candidate_skills(user_id,skill_id) VALUES(%s,%s)",(session["user_id"],sid))
         conn.commit(); session["full_name"]=name; session["email"]=email
         return jsonify({"status":"success","message":"Profile saved.","profile_complete":True})
@@ -228,28 +249,71 @@ def start_assessment():
     except (TypeError,ValueError): return json_error("Select a valid skill.",400)
     conn=None
     try:
+        seed_assessment_bank()
         conn=db()
         with conn.cursor() as cur:
             cur.execute("SELECT s.id,s.name FROM candidate_skills cs JOIN skills s ON s.id=cs.skill_id WHERE cs.user_id=%s AND s.id=%s",(session["user_id"],skill_id))
             skill=cur.fetchone()
             if not skill: return json_error("You can only assess a skill selected in your profile.",403)
-            cur.execute("SELECT id,question_text,option_a,option_b,option_c,option_d,marks FROM assessment_questions WHERE skill_id=%s AND active=1 ORDER BY RAND() LIMIT 10",(skill_id,)); questions=cur.fetchall()
-            # Use local Ollama/Qwen to expand small question banks and save valid MCQs in MySQL.
+            questions=[]
+            for level,need in [('EASY',3),('MEDIUM',4),('HARD',3)]:
+                cur.execute("SELECT id,question_text,option_a,option_b,option_c,option_d,marks,difficulty FROM assessment_questions WHERE skill_id=%s AND active=1 AND difficulty=%s ORDER BY RAND() LIMIT %s",(skill_id,level,need))
+                questions.extend(cur.fetchall())
+            if len(questions)!=10:
+                cur.execute("SELECT id,question_text,option_a,option_b,option_c,option_d,marks,difficulty FROM assessment_questions WHERE skill_id=%s AND active=1 ORDER BY RAND() LIMIT 10",(skill_id,))
+                questions=cur.fetchall()
             if len(questions)<10:
-                generated=generate_questions(skill["name"],count=10)
-                for item in generated:
-                    cur.execute("INSERT INTO assessment_questions(skill_id,question_text,option_a,option_b,option_c,option_d,correct_option,marks,active) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,1)",(skill_id,item["question_text"],item["option_a"],item["option_b"],item["option_c"],item["option_d"],item["correct_option"],item["marks"]))
-                if generated:
-                    cur.execute("SELECT id,question_text,option_a,option_b,option_c,option_d,marks FROM assessment_questions WHERE skill_id=%s AND active=1 ORDER BY RAND() LIMIT 10",(skill_id,)); questions=cur.fetchall()
-            if len(questions)<3: return json_error("Not enough questions are available. Start Ollama with the configured Qwen model, or add at least 3 questions for this skill in MySQL.",409)
-            cur.execute("INSERT INTO assessment_attempts(user_id,skill_id,status,started_at,time_limit_seconds,total_marks) VALUES(%s,%s,'IN_PROGRESS',NOW(),900,%s)",(session["user_id"],skill_id,sum(int(q["marks"]) for q in questions)))
+                return json_error("This skill does not have a complete 30-question bank. Run `python seed_assessments.py`.",409)
+            for q in questions:
+                diff = str(q.get('difficulty') or 'MEDIUM').strip().upper()
+                q['marks'] = {'EASY': 3, 'MEDIUM': 5, 'HARD': 7}.get(diff, 5)
+            cur.execute("INSERT INTO assessment_attempts(user_id,skill_id,status,started_at,time_limit_seconds,total_marks) VALUES(%s,%s,'IN_PROGRESS',NOW(),900,50)",(session["user_id"],skill_id))
             attempt_id=cur.lastrowid
-            for i,q in enumerate(questions,1): cur.execute("INSERT INTO assessment_attempt_questions(attempt_id,question_id,question_number,marks) VALUES(%s,%s,%s,%s)",(attempt_id,q["id"],i,q["marks"]))
+            for i,q in enumerate(questions,1):
+                cur.execute("INSERT INTO assessment_attempt_questions(attempt_id,question_id,question_number,marks) VALUES(%s,%s,%s,%s)",(attempt_id,q['id'],i,q['marks']))
         conn.commit()
-        return jsonify({"attempt_id":attempt_id,"skill":skill["name"],"time_limit_seconds":900,"questions":[{"id":q["id"],"number":i+1,"text":q["question_text"],"options":{"A":q["option_a"],"B":q["option_b"],"C":q["option_c"],"D":q["option_d"]}} for i,q in enumerate(questions)]}),201
+        return jsonify({
+            "attempt_id": attempt_id,
+            "skill": skill["name"],
+            "time_limit_seconds": 900,
+            "total_marks": 50,
+            "questions": [{
+                "id": q['id'],
+                "number": i+1,
+                "difficulty": str(q.get('difficulty') or 'medium').lower(),
+                "marks": q['marks'],
+                "text": q['question_text'],
+                "options": {"A": q['option_a'], "B": q['option_b'], "C": q['option_c'], "D": q['option_d']}
+            } for i,q in enumerate(questions)]
+        }), 201
     except Exception:
         if conn: conn.rollback()
         app.logger.exception("Assessment start failed"); return json_error("Could not start assessment.",500)
+    finally:
+        if conn: conn.close()
+
+@app.post("/api/assessments/<int:attempt_id>/proctor-event")
+@require_role()
+def assessment_proctor_event(attempt_id):
+    data=body() or {}; event=str(data.get('event_type') or '').strip().upper(); details=str(data.get('details') or '')[:255]
+    allowed={'TAB_SWITCH','FULLSCREEN_EXIT','MULTIPLE_FACES','MOBILE_DETECTED','CAMERA_UNAVAILABLE','CAMERA_PERMISSION_DENIED'}
+    if event not in allowed: return json_error('Invalid proctor event.',400)
+    conn=None
+    try:
+        conn=db()
+        with conn.cursor() as cur:
+            cur.execute('SELECT id,status FROM assessment_attempts WHERE id=%s AND user_id=%s',(attempt_id,session['user_id']))
+            attempt=cur.fetchone()
+            if not attempt: return json_error('Assessment attempt not found.',404)
+            if attempt['status']!='IN_PROGRESS': return json_error('Attempt is not active.',409)
+            cur.execute('INSERT INTO assessment_proctor_events(attempt_id,user_id,event_type,details) VALUES(%s,%s,%s,%s)',(attempt_id,session['user_id'],event,details))
+            cur.execute("SELECT COUNT(*) AS n FROM assessment_proctor_events WHERE attempt_id=%s AND event_type IN ('TAB_SWITCH','FULLSCREEN_EXIT','MULTIPLE_FACES','MOBILE_DETECTED')",(attempt_id,))
+            violations=int(cur.fetchone()['n'])
+        conn.commit()
+        return jsonify({'recorded':True,'violations':violations,'terminate':violations>=3})
+    except Exception:
+        if conn: conn.rollback()
+        app.logger.exception('Proctor event logging failed'); return json_error('Could not record proctor event.',500)
     finally:
         if conn: conn.close()
 
@@ -262,7 +326,8 @@ def submit_assessment(attempt_id):
     try:
         conn=db()
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM assessment_attempts WHERE id=%s AND user_id=%s FOR UPDATE",(attempt_id,session["user_id"])); attempt=cur.fetchone()
+            cur.execute("SELECT * FROM assessment_attempts WHERE id=%s AND user_id=%s",(attempt_id,session["user_id"]))
+            attempt=cur.fetchone()
             if not attempt: return json_error("Assessment attempt not found.",404)
             if attempt["status"]!="IN_PROGRESS": return json_error("This assessment has already been submitted or closed.",409)
             cur.execute("SELECT aq.question_id,aq.marks,q.correct_option FROM assessment_attempt_questions aq JOIN assessment_questions q ON q.id=aq.question_id WHERE aq.attempt_id=%s",(attempt_id,)); qs=cur.fetchall()
@@ -272,14 +337,38 @@ def submit_assessment(attempt_id):
                 if chosen not in ("A","B","C","D"): chosen=""
                 ok=chosen==q["correct_option"]
                 if ok: score+=int(q["marks"]); correct+=1
-                cur.execute("INSERT INTO assessment_answers(attempt_id,question_id,selected_answer,is_correct,marks_awarded) VALUES(%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE selected_answer=VALUES(selected_answer),is_correct=VALUES(is_correct),marks_awarded=VALUES(marks_awarded)",(attempt_id,q["question_id"],chosen or None,int(ok),int(q["marks"]) if ok else 0))
-            expired=(attempt["started_at"].timestamp()+int(attempt["time_limit_seconds"])) < __import__('time').time()
+                cur.execute("DELETE FROM assessment_answers WHERE attempt_id=%s AND question_id=%s",(attempt_id,q["question_id"]))
+                cur.execute("INSERT INTO assessment_answers(attempt_id,question_id,selected_answer,is_correct,marks_awarded) VALUES(%s,%s,%s,%s,%s)",(attempt_id,q["question_id"],chosen or None,int(ok),int(q["marks"]) if ok else 0))
+            
+            started = attempt.get("started_at")
+            started_ts = 0
+            if isinstance(started, str):
+                from datetime import datetime, timezone
+                try:
+                    dt = datetime.fromisoformat(started.replace(" ", "T"))
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    started_ts = dt.timestamp()
+                except Exception:
+                    started_ts = 0
+            elif hasattr(started, "timestamp"):
+                started_ts = started.timestamp()
+
+            import time
+            expired = bool(started_ts and (started_ts + int(attempt.get("time_limit_seconds") or 900)) < time.time())
+            requested_reason=str(data.get("reason") or "MANUAL").upper()
+            proctor_violations=False
+            if requested_reason == "PROCTOR_VIOLATION":
+                cur.execute("SELECT COUNT(*) AS n FROM assessment_proctor_events WHERE attempt_id=%s AND event_type IN ('TAB_SWITCH','FULLSCREEN_EXIT','MULTIPLE_FACES','MOBILE_DETECTED')",(attempt_id,))
+                proctor_violations=int(cur.fetchone()["n"]) >= 3
             pct=round(score*100/total,2) if total else 0
-            status="COMPLETED" if not expired else "TERMINATED"
-            cur.execute("UPDATE assessment_attempts SET status=%s,score=%s,percentage=%s,submitted_at=NOW(),finish_reason=%s WHERE id=%s",(status,score,pct,"MANUAL" if not expired else "TIME_EXPIRED",attempt_id))
+            terminated=expired or proctor_violations
+            status="TERMINATED" if terminated else "COMPLETED"
+            finish_reason="TIME_EXPIRED" if expired else ("PROCTOR_VIOLATION" if proctor_violations else "MANUAL")
+            cur.execute("UPDATE assessment_attempts SET status=%s,score=%s,percentage=%s,submitted_at=DATETIME('now'),finish_reason=%s WHERE id=%s",(status,score,pct,finish_reason,attempt_id))
             cur.execute("INSERT INTO assessment_results(attempt_id,user_id,skill_id,score,total_marks,percentage,correct_count,status) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",(attempt_id,session["user_id"],attempt["skill_id"],score,total,pct,correct,status))
         conn.commit()
-        return jsonify({"status":status,"score":score,"total_marks":total,"percentage":pct,"correct_count":correct,"message":"Assessment submitted. Results are calculated on the server."})
+        return jsonify({"status":status,"score":score,"total_marks":total,"percentage":pct,"correct_count":correct,"message":("Assessment terminated after repeated proctoring violations." if status=="TERMINATED" and finish_reason=="PROCTOR_VIOLATION" else ("Time limit exceeded; attempt terminated." if expired else "Assessment submitted. Results are calculated on the server."))})
     except Exception:
         if conn: conn.rollback()
         app.logger.exception("Assessment submission failed"); return json_error("Could not submit assessment.",500)
@@ -293,22 +382,506 @@ def skill_passport():
     try:
         conn=db()
         with conn.cursor() as cur:
-            cur.execute("""SELECT s.name,MAX(r.percentage) best_percentage,COUNT(r.id) attempts,
-            MAX(CASE WHEN r.status='COMPLETED' THEN 1 ELSE 0 END) completed
-            FROM candidate_skills cs JOIN skills s ON s.id=cs.skill_id
-            LEFT JOIN assessment_results r ON r.skill_id=s.id AND r.user_id=cs.user_id
-            WHERE cs.user_id=%s GROUP BY s.id,s.name ORDER BY s.name""",(session["user_id"],)); rows=cur.fetchall()
-            cur.execute("SELECT COUNT(*) n FROM candidate_skills WHERE user_id=%s",(session["user_id"],)); total=cur.fetchone()["n"]
-            cur.execute("SELECT COUNT(DISTINCT skill_id) n FROM assessment_results WHERE user_id=%s AND status='COMPLETED'",(session["user_id"],)); done=cur.fetchone()["n"]
+            cur.execute("""SELECT s.id skill_id,s.name,
+                           (SELECT MAX(r.percentage) FROM assessment_results r WHERE r.user_id=cs.user_id AND r.skill_id=cs.skill_id AND r.status='COMPLETED') best_percentage,
+                           (SELECT COUNT(*) FROM assessment_results r WHERE r.user_id=cs.user_id AND r.skill_id=cs.skill_id) attempts,
+                           (SELECT a.status FROM assessment_attempts a WHERE a.user_id=cs.user_id AND a.skill_id=cs.skill_id ORDER BY a.id DESC LIMIT 1) latest_status
+                           FROM candidate_skills cs JOIN skills s ON s.id=cs.skill_id
+                           WHERE cs.user_id=%s ORDER BY s.name""", (session["user_id"],))
+            rows=cur.fetchall()
+            total=len(rows)
+            done=sum(1 for row in rows if row.get("latest_status")=="COMPLETED")
             code=None
             if total>0 and done>=total:
-                cur.execute("SELECT passport_code,generated_at FROM skill_passports WHERE user_id=%s",(session["user_id"],)); existing=cur.fetchone()
+                cur.execute("SELECT passport_code,generated_at FROM skill_passports WHERE user_id=%s",(session["user_id"],))
+                existing=cur.fetchone()
                 if not existing:
-                    code="VX-"+secrets.token_hex(6).upper(); cur.execute("INSERT INTO skill_passports(user_id,passport_code) VALUES(%s,%s)",(session["user_id"],code)); conn.commit()
-                else: code=existing["passport_code"]
+                    code="VX-"+secrets.token_hex(6).upper()
+                    cur.execute("INSERT INTO skill_passports(user_id,passport_code) VALUES(%s,%s)",(session["user_id"],code))
+                    conn.commit()
+                else:
+                    code=existing["passport_code"]
         return jsonify({"skills":rows,"total_skills":total,"completed_skills":done,"issued":bool(total>0 and done>=total),"passport_code":code})
-    except Exception: app.logger.exception("Passport failed"); return json_error("Could not load Skill Passport.",500)
+    except Exception:
+        app.logger.exception("Passport failed"); return json_error("Could not load Skill Passport.",500)
     finally:
         if conn: conn.close()
 
+# ── Jobs & Applications Endpoints ─────────────────────────────────────
+
+@app.get("/api/jobs")
+def get_jobs():
+    search = str(request.args.get("search") or "").strip()
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            query = """
+                SELECT j.id, j.title, j.description, j.skills_required, j.location, j.salary_range,
+                       u.full_name AS company_name
+                FROM jobs j
+                JOIN users u ON j.employer_id = u.id
+                WHERE j.is_active = 1
+            """
+            params = []
+            if search:
+                pattern = f"%{search}%"
+                query += " AND (j.title LIKE %s OR j.skills_required LIKE %s OR u.full_name LIKE %s)"
+                params = [pattern, pattern, pattern]
+            query += " ORDER BY j.created_at DESC"
+            cur.execute(query, params)
+            jobs = cur.fetchall()
+            return jsonify(jobs or [])
+    except Exception:
+        app.logger.exception("Jobs load failed")
+        return jsonify([])
+    finally:
+        if conn: conn.close()
+
+
+@app.get("/api/jobs/recommendations")
+def get_recommendations():
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT j.id, j.title, j.description, j.skills_required, j.location, j.salary_range,
+                       u.full_name AS company_name
+                FROM jobs j
+                JOIN users u ON j.employer_id = u.id
+                WHERE j.is_active = 1
+            """)
+            jobs = cur.fetchall() or []
+
+            # Retrieve candidate profile with education and practical projects
+            user_id = session.get("user_id")
+            cand_profile = {"id": user_id, "skills": [], "bio": "", "projects": []}
+            if user_id:
+                cur.execute("""
+                    SELECT u.full_name, p.bio, p.experience, e.degree, e.graduation_year,
+                           GROUP_CONCAT(s.name) AS skills_str
+                    FROM users u
+                    LEFT JOIN candidate_profiles p ON p.user_id = u.id
+                    LEFT JOIN candidate_education e ON e.user_id = u.id
+                    LEFT JOIN candidate_skills cs ON cs.user_id = u.id
+                    LEFT JOIN skills s ON s.id = cs.skill_id
+                    WHERE u.id = %s
+                    GROUP BY u.id
+                """, (user_id,))
+                row = cur.fetchone()
+                if row:
+                    cand_profile["full_name"] = row.get("full_name") or ""
+                    cand_profile["bio"] = row.get("bio") or ""
+                    cand_profile["experience"] = row.get("experience") or ""
+                    cand_profile["degree"] = row.get("degree") or ""
+                    cand_profile["graduation_year"] = row.get("graduation_year")
+                    cand_profile["skills"] = [s.strip() for s in (row.get("skills_str") or "").split(",") if s.strip()]
+
+                # Fetch candidate projects for practical experience evaluation
+                cur.execute("""
+                    SELECT id, title, description, tech_stack, live_url, github_url
+                    FROM candidate_projects
+                    WHERE user_id = %s
+                    ORDER BY id DESC
+                """, (user_id,))
+                cand_profile["projects"] = cur.fetchall() or []
+
+        # Run AI matching if matching.py is present
+        try:
+            from matching import rank_jobs_for_candidate
+            ranked = rank_jobs_for_candidate(cand_profile, jobs)
+            return jsonify(ranked)
+        except Exception as e:
+            app.logger.warning(f"AI matching fallback: {e}")
+            for j in jobs:
+                j["match_score"] = 75
+            return jsonify(jobs)
+    except Exception:
+        app.logger.exception("Recommendations failed")
+        return jsonify([])
+    finally:
+        if conn: conn.close()
+
+
+@app.post("/api/matching/what-if")
+def what_if_simulation():
+    data = body() or {}
+    simulated_skills = data.get("simulated_skills") or []
+    if not isinstance(simulated_skills, list):
+        return json_error("simulated_skills must be a list of skill names.", 400)
+
+    user_id = session.get("user_id")
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT j.id, j.title, j.description, j.skills_required, j.location, j.salary_range,
+                       u.full_name AS company_name
+                FROM jobs j
+                JOIN users u ON j.employer_id = u.id
+                WHERE j.is_active = 1
+            """)
+            jobs = cur.fetchall() or []
+
+            cand_profile = {"id": user_id, "skills": [], "bio": "", "projects": []}
+            if user_id:
+                cur.execute("""
+                    SELECT u.full_name, p.bio, p.experience, e.degree, e.graduation_year,
+                           GROUP_CONCAT(s.name) AS skills_str
+                    FROM users u
+                    LEFT JOIN candidate_profiles p ON p.user_id = u.id
+                    LEFT JOIN candidate_education e ON e.user_id = u.id
+                    LEFT JOIN candidate_skills cs ON cs.user_id = u.id
+                    LEFT JOIN skills s ON s.id = cs.skill_id
+                    WHERE u.id = %s
+                    GROUP BY u.id
+                """, (user_id,))
+                row = cur.fetchone()
+                if row:
+                    cand_profile["full_name"] = row.get("full_name") or ""
+                    cand_profile["bio"] = row.get("bio") or ""
+                    cand_profile["experience"] = row.get("experience") or ""
+                    cand_profile["degree"] = row.get("degree") or ""
+                    cand_profile["graduation_year"] = row.get("graduation_year")
+                    cand_profile["skills"] = [s.strip() for s in (row.get("skills_str") or "").split(",") if s.strip()]
+
+                cur.execute("""
+                    SELECT id, title, description, tech_stack, live_url, github_url
+                    FROM candidate_projects
+                    WHERE user_id = %s
+                """, (user_id,))
+                cand_profile["projects"] = cur.fetchall() or []
+
+        from matching import simulate_what_if_match
+        simulation = simulate_what_if_match(cand_profile, jobs, simulated_skills)
+        return jsonify(simulation)
+    except Exception:
+        app.logger.exception("What-if simulation failed")
+        return json_error("Failed to run what-if simulation.", 500)
+    finally:
+        if conn: conn.close()
+
+
+@app.get("/api/candidate/projects")
+@require_role()
+def get_candidate_projects():
+    user_id = session.get("user_id")
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, title, description, tech_stack, live_url, github_url, created_at
+                FROM candidate_projects
+                WHERE user_id = %s
+                ORDER BY id DESC
+            """, (user_id,))
+            return jsonify(cur.fetchall() or [])
+    except Exception:
+        app.logger.exception("Failed to load candidate projects")
+        return jsonify([])
+    finally:
+        if conn: conn.close()
+
+
+@app.post("/api/candidate/projects")
+@require_role()
+def add_candidate_project():
+    data = body() or {}
+    title = str(data.get("title") or "").strip()
+    description = str(data.get("description") or "").strip()
+    tech_stack = str(data.get("tech_stack") or "").strip()
+    live_url = str(data.get("live_url") or "").strip()
+    github_url = str(data.get("github_url") or "").strip()
+
+    if not title:
+        return json_error("Project title is required.", 400)
+
+    user_id = session.get("user_id")
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO candidate_projects (user_id, title, description, tech_stack, live_url, github_url)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (user_id, title, description, tech_stack, live_url, github_url))
+        conn.commit()
+        return jsonify({"status": "success", "message": "Project added successfully!"}), 201
+    except Exception:
+        if conn: conn.rollback()
+        app.logger.exception("Failed to add candidate project")
+        return json_error("Failed to save project.", 500)
+    finally:
+        if conn: conn.close()
+
+
+@app.delete("/api/candidate/projects/<int:project_id>")
+@require_role()
+def delete_candidate_project(project_id):
+    user_id = session.get("user_id")
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM candidate_projects WHERE id = %s AND user_id = %s", (project_id, user_id))
+        conn.commit()
+        return jsonify({"status": "success", "message": "Project removed."})
+    except Exception:
+        if conn: conn.rollback()
+        app.logger.exception("Failed to delete candidate project")
+        return json_error("Failed to delete project.", 500)
+    finally:
+        if conn: conn.close()
+
+
+@app.get("/api/my-applications")
+def get_my_applications():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify([])
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT a.id, a.job_id, a.status, a.applied_at,
+                       j.title AS job_title, u.full_name AS company_name
+                FROM applications a
+                JOIN jobs j ON a.job_id = j.id
+                JOIN users u ON j.employer_id = u.id
+                WHERE a.applicant_id = %s
+                ORDER BY a.applied_at DESC
+            """, (user_id,))
+            apps = cur.fetchall() or []
+            return jsonify(apps)
+    except Exception:
+        app.logger.exception("Applications load failed")
+        return jsonify([])
+    finally:
+        if conn: conn.close()
+
+
+@app.post("/api/applications")
+def apply_to_job():
+    user_id = session.get("user_id")
+    if not user_id:
+        return json_error("Please log in to apply.", 401)
+    data = body() or {}
+    job_id = data.get("job_id")
+    if not job_id:
+        return json_error("job_id is required.", 400)
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO applications (job_id, applicant_id, status)
+                VALUES (%s, %s, 'pending')
+            """, (job_id, user_id))
+        conn.commit()
+        return jsonify({"status": "success", "message": "Application submitted successfully!"})
+    except Exception as e:
+        if conn: conn.rollback()
+        # If already applied (unique constraint)
+        return jsonify({"status": "success", "message": "Already applied for this job."})
+    finally:
+        if conn: conn.close()
+
+
+# ── Employer / Company Job Management & Applicant Endpoints ──────────
+
+@app.post("/api/jobs")
+def create_job():
+    user_id = session.get("user_id")
+    role = session.get("role")
+    if not user_id or role != "employer":
+        return json_error("Only logged in companies can post jobs.", 403)
+    data = body() or {}
+    title = str(data.get("title") or "").strip()
+    if not title:
+        return json_error("Job title is required.", 400)
+    description = str(data.get("description") or "").strip()
+    skills = str(data.get("skills_required") or data.get("skills") or "").strip()
+    location = str(data.get("location") or "Remote").strip()
+    salary = str(data.get("salary_range") or data.get("salary") or "Competitive").strip()
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO jobs (employer_id, title, description, skills_required, location, salary_range, is_active)
+                VALUES (%s, %s, %s, %s, %s, %s, 1)
+            """, (user_id, title, description, skills, location, salary))
+            job_id = cur.lastrowid
+        conn.commit()
+        return jsonify({
+            "status": "success",
+            "message": "Job posted successfully!",
+            "job": {
+                "id": job_id,
+                "title": title,
+                "description": description,
+                "skills_required": skills,
+                "location": location,
+                "salary_range": salary
+            }
+        }), 201
+    except Exception:
+        if conn: conn.rollback()
+        app.logger.exception("Job creation failed")
+        return json_error("Could not post job.", 500)
+    finally:
+        if conn: conn.close()
+
+
+@app.get("/api/company/jobs")
+def get_company_jobs():
+    user_id = session.get("user_id")
+    if not user_id or session.get("role") != "employer":
+        return json_error("Unauthorized.", 401)
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT j.id, j.title, j.description, j.skills_required, j.location, j.salary_range,
+                       j.is_active, j.created_at,
+                       COUNT(a.id) AS applicants_count
+                FROM jobs j
+                LEFT JOIN applications a ON a.job_id = j.id
+                WHERE j.employer_id = %s
+                GROUP BY j.id
+                ORDER BY j.created_at DESC
+            """, (user_id,))
+            jobs = cur.fetchall() or []
+            return jsonify(jobs)
+    except Exception:
+        app.logger.exception("Company jobs load failed")
+        return jsonify([])
+    finally:
+        if conn: conn.close()
+
+
+@app.post("/api/company/jobs/<int:job_id>/toggle")
+def toggle_company_job(job_id):
+    user_id = session.get("user_id")
+    if not user_id or session.get("role") != "employer":
+        return json_error("Unauthorized.", 401)
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, is_active FROM jobs WHERE id = %s AND employer_id = %s", (job_id, user_id))
+            job = cur.fetchone()
+            if not job:
+                return json_error("Job not found.", 404)
+            new_state = 0 if job["is_active"] else 1
+            cur.execute("UPDATE jobs SET is_active = %s WHERE id = %s", (new_state, job_id))
+        conn.commit()
+        return jsonify({"status": "success", "is_active": new_state})
+    except Exception:
+        if conn: conn.rollback()
+        return json_error("Could not update job status.", 500)
+    finally:
+        if conn: conn.close()
+
+
+@app.get("/api/company/applicants")
+def get_company_applicants():
+    user_id = session.get("user_id")
+    if not user_id or session.get("role") != "employer":
+        return json_error("Unauthorized.", 401)
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT a.id AS application_id, a.job_id, a.applicant_id, a.status, a.applied_at,
+                       j.title AS job_title,
+                       u.full_name AS candidate_name, u.email AS candidate_email,
+                       p.phone, p.experience, e.degree, e.branch, e.college,
+                       GROUP_CONCAT(s.name) AS skills_str
+                FROM applications a
+                JOIN jobs j ON a.job_id = j.id
+                JOIN users u ON a.applicant_id = u.id
+                LEFT JOIN candidate_profiles p ON p.user_id = u.id
+                LEFT JOIN candidate_education e ON e.user_id = u.id
+                LEFT JOIN candidate_skills cs ON cs.user_id = u.id
+                LEFT JOIN skills s ON s.id = cs.skill_id
+                WHERE j.employer_id = %s
+                GROUP BY a.id
+                ORDER BY a.applied_at DESC
+            """, (user_id,))
+            applicants = cur.fetchall() or []
+            try:
+                from matching import calculate_hybrid_match
+                for app_row in applicants:
+                    cand_profile = {
+                        "skills": [s.strip() for s in (app_row.get("skills_str") or "").split(",") if s.strip()],
+                        "experience": app_row.get("experience") or "",
+                        "degree": app_row.get("degree") or "",
+                        "projects": []
+                    }
+                    cur.execute("SELECT skills_required FROM jobs WHERE id = %s", (app_row["job_id"],))
+                    j_row = cur.fetchone()
+                    job_dict = {
+                        "title": app_row.get("job_title") or "",
+                        "skills_required": j_row.get("skills_required") if j_row else ""
+                    }
+                    match_res = calculate_hybrid_match(cand_profile, job_dict)
+                    app_row["match_score"] = match_res.get("match_score", 70)
+            except Exception:
+                for app_row in applicants:
+                    app_row["match_score"] = 75
+            return jsonify(applicants)
+    except Exception:
+        app.logger.exception("Company applicants load failed")
+        return jsonify([])
+    finally:
+        if conn: conn.close()
+
+
+@app.post("/api/company/applications/<int:app_id>/status")
+def update_application_status(app_id):
+    user_id = session.get("user_id")
+    if not user_id or session.get("role") != "employer":
+        return json_error("Unauthorized.", 401)
+    data = body() or {}
+    new_status = str(data.get("status") or "").strip().lower()
+    status_map = {
+        "applied": "pending",
+        "pending": "pending",
+        "review": "reviewed",
+        "reviewed": "reviewed",
+        "shortlisted": "accepted",
+        "accepted": "accepted",
+        "interview": "accepted",
+        "rejected": "rejected"
+    }
+    mapped = status_map.get(new_status, "pending")
+    conn = None
+    try:
+        conn = db()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT a.id FROM applications a
+                JOIN jobs j ON a.job_id = j.id
+                WHERE a.id = %s AND j.employer_id = %s
+            """, (app_id, user_id))
+            if not cur.fetchone():
+                return json_error("Application not found or unauthorized.", 404)
+            cur.execute("UPDATE applications SET status = %s WHERE id = %s", (mapped, app_id))
+        conn.commit()
+        return jsonify({"status": "success", "message": f"Status updated to {mapped}."})
+    except Exception:
+        if conn: conn.rollback()
+        return json_error("Could not update status.", 500)
+    finally:
+        if conn: conn.close()
+
+
 if __name__=="__main__": app.run(host="127.0.0.1",port=5000,debug=os.getenv("FLASK_DEBUG","0")=="1")
+

@@ -4,78 +4,408 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>VORTEXA | Company Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f4f7fb; --panel: #fff; --ink: #182230; --muted: #667085;
-      --line: #e5eaf1; --brand: #5145cd; --brand-dark: #3d34a8;
-      --green: #16845b; --amber: #a65d03; --red: #b42318;
-      --shadow: 0 10px 30px rgba(24,34,48,.06);
+      --bg: #080314;
+      --panel: rgba(14, 8, 30, 0.88);
+      --panel-card: rgba(18, 9, 38, 0.82);
+      --ink: #f8fafc;
+      --muted: #94a3b8;
+      --line: rgba(0, 240, 255, 0.2);
+      --brand: #ff007f;
+      --brand-gradient: linear-gradient(90deg, #ff007f 0%, #7928ca 100%);
+      --neon-cyan: #00f0ff;
+      --neon-purple: #7928ca;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ff4d6d;
+      --shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+      --font-display: 'Rajdhani', -apple-system, sans-serif;
+      --font-body: 'Inter', -apple-system, sans-serif;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Inter, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--ink); }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      background-color: var(--bg);
+      background-image: radial-gradient(ellipse at 50% 20%, #1c0938 0%, #0d041c 55%, #05010a 100%);
+      background-attachment: fixed;
+      color: var(--ink);
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Cyberpunk Horizon & City Skyline */
+    body::before {
+      content: '';
+      position: fixed;
+      bottom: 24vh;
+      left: 0;
+      width: 100vw;
+      height: 380px;
+      background: url('/static/css/cyberpunk_skyline.svg') bottom center repeat-x;
+      background-size: 1920px 380px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.85;
+    }
+
+    /* Cyberpunk Perspective Grid Floor */
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: 0;
+      left: -50%;
+      width: 200%;
+      height: 36vh;
+      background-image:
+        linear-gradient(90deg, rgba(0, 240, 255, 0.3) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255, 0, 127, 0.38) 1px, transparent 1px);
+      background-size: 60px 60px;
+      transform-origin: top center;
+      transform: perspective(300px) rotateX(68deg);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 50%, rgba(0,0,0,0.1) 100%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 50%, rgba(0,0,0,0.1) 100%);
+      pointer-events: none;
+      z-index: 0;
+      box-shadow: 0 -2px 14px rgba(0, 240, 255, 0.6), 0 -8px 25px rgba(255, 0, 127, 0.35);
+      border-top: 2px solid #00f0ff;
+    }
+
     button, input, select, textarea { font: inherit; }
     button { cursor: pointer; }
-    .layout { display: grid; grid-template-columns: 245px minmax(0,1fr); min-height: 100vh; }
-    aside { background: #17172d; color: #fff; padding: 26px 17px; }
-    .logo { font-size: 22px; font-weight: 800; letter-spacing: 2px; padding: 0 12px 32px; }
-    .logo span { color: #a8a1ff; }
-    .nav-label { color: #aaaac2; font-size: 11px; text-transform: uppercase; letter-spacing: 1.4px; padding: 0 12px 10px; }
-    .nav { display: grid; gap: 7px; }
-    .nav a { text-decoration: none; color: #d9d9e8; padding: 12px; border-radius: 9px; display: block; }
-    .nav a.active, .nav a:hover { color: #fff; background: #37345f; }
-    .side-note { margin: 38px 8px 0; padding: 14px; background: #252541; border-radius: 12px; color: #d0d0e4; font-size: 12px; line-height: 1.6; }
-    main { min-width: 0; padding: 28px clamp(16px,3vw,38px); }
-    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
-    .eyebrow { color: var(--muted); font-size: 13px; margin: 0 0 5px; }
-    h1 { font-size: clamp(25px,3vw,32px); margin: 0; letter-spacing: -.7px; }
-    .company { display: flex; align-items: center; gap: 10px; font-weight: 650; }
-    .avatar { width: 38px; height: 38px; border-radius: 12px; background: #e8e5ff; color: var(--brand); display: grid; place-items: center; font-weight: 800; }
-    .button { border: 0; background: var(--brand); color: white; padding: 11px 15px; border-radius: 9px; font-weight: 650; }
-    .button:hover { background: var(--brand-dark); }
-    .button.secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
-    .button.small { padding: 7px 10px; font-size: 12px; }
-    .stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; margin-bottom: 24px; }
-    .card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
-    .stat { padding: 19px; }
-    .stat-label { color: var(--muted); font-size: 13px; }
-    .stat-value { font-size: 30px; font-weight: 780; margin: 12px 0 5px; }
+    .layout {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 255px minmax(0,1fr);
+      min-height: 100vh;
+    }
+    aside {
+      background: rgba(9, 5, 20, 0.94);
+      color: #fff;
+      padding: 28px 18px;
+      border-right: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .logo {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      padding: 0 12px 28px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo::before {
+      content: '◆';
+      color: var(--brand);
+      font-size: 19px;
+      text-shadow: 0 0 10px var(--brand);
+    }
+    .logo span { color: var(--neon-cyan); }
+    .nav-label {
+      color: var(--muted);
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.6px;
+      padding: 0 12px 12px;
+    }
+    .nav { display: grid; gap: 8px; }
+    .nav a {
+      text-decoration: none;
+      color: #cbd5e1;
+      padding: 11px 14px;
+      border-radius: 8px;
+      display: block;
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid transparent;
+    }
+    .nav a:hover {
+      background: rgba(0, 240, 255, 0.08);
+      color: var(--neon-cyan);
+      border-color: rgba(0, 240, 255, 0.2);
+    }
+    .nav a.active {
+      background: rgba(0, 240, 255, 0.12);
+      color: var(--neon-cyan);
+      border: 1px solid rgba(0, 240, 255, 0.38);
+      box-shadow: inset 0 0 12px rgba(0, 240, 255, 0.16), 0 0 12px rgba(0, 240, 255, 0.22);
+      font-weight: 700;
+    }
+    .side-note {
+      margin: 38px 8px 0;
+      padding: 14px;
+      background: rgba(18, 9, 38, 0.8);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .side-note strong { color: var(--neon-cyan); }
+    main { min-width: 0; padding: 32px clamp(18px,3vw,40px); }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+    }
+    .eyebrow {
+      color: var(--neon-cyan);
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      margin: 0 0 4px;
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(26px,3vw,34px);
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin: 0;
+      color: #fff;
+      text-shadow: 0 0 14px rgba(255, 255, 255, 0.2);
+    }
+    .company { display: flex; align-items: center; gap: 12px; font-weight: 650; }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--brand-gradient);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-display);
+      font-weight: 800;
+      box-shadow: 0 0 12px rgba(255, 0, 127, 0.4);
+    }
+    .button {
+      border: 0;
+      background: var(--brand-gradient);
+      color: white;
+      padding: 11px 18px;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      box-shadow: 0 0 16px rgba(255, 0, 127, 0.4);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .button:hover {
+      box-shadow: 0 0 24px rgba(255, 0, 127, 0.65), 0 0 10px rgba(0, 240, 255, 0.4);
+      transform: translateY(-1px);
+    }
+    .button.secondary {
+      background: rgba(0, 240, 255, 0.12);
+      color: var(--neon-cyan);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      box-shadow: none;
+    }
+    .button.secondary:hover {
+      background: rgba(0, 240, 255, 0.22);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+      color: #fff;
+    }
+    .button.small { padding: 6px 12px; font-size: 11.5px; }
+    .stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 18px; margin-bottom: 26px; }
+    .card, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .stat { padding: 22px; transition: transform 0.2s, border-color 0.2s; }
+    .stat:hover {
+      border-color: rgba(0, 240, 255, 0.45);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+    }
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 34px;
+      font-weight: 800;
+      color: var(--neon-cyan);
+      margin: 10px 0 4px;
+      text-shadow: 0 0 12px rgba(0, 240, 255, 0.45);
+    }
     .stat-hint { font-size: 12px; color: var(--muted); }
-    .content-grid { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(290px,1fr); gap: 20px; }
-    .panel { padding: 20px; min-width: 0; margin-bottom: 20px; }
-    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
-    h2 { margin: 0; font-size: 17px; }
+    .content-grid { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(290px,1fr); gap: 22px; }
+    .panel { padding: 24px; min-width: 0; margin-bottom: 22px; }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+    h2 {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #fff;
+      margin: 0;
+    }
     .muted { color: var(--muted); font-size: 13px; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-    th { color: var(--muted); font-weight: 600; font-size: 12px; background: #fafbfc; }
-    th, td { padding: 13px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    th {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      background: rgba(7, 3, 16, 0.6);
+    }
+    th, td { padding: 14px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; color: var(--ink); }
     tbody tr:last-child td { border-bottom: 0; }
-    .pill { display: inline-block; border-radius: 99px; padding: 5px 9px; font-size: 11px; font-weight: 700; background: #eef2f6; color: #475467; }
-    .pill.open, .pill.shortlisted { background: #e7f7ef; color: var(--green); }
-    .pill.review { background: #fff4df; color: var(--amber); }
-    .pill.closed, .pill.rejected { background: #feeceb; color: var(--red); }
-    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-    input, select, textarea { width: 100%; padding: 10px 11px; border: 1px solid #d6dce5; border-radius: 8px; background: #fff; color: var(--ink); }
+    tbody tr:hover td { background: rgba(0, 240, 255, 0.04); }
+    .pill {
+      display: inline-block;
+      border-radius: 99px;
+      padding: 4px 11px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(0, 240, 255, 0.12);
+      color: var(--neon-cyan);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+    }
+    .pill.open, .pill.shortlisted {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green);
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+    }
+    .pill.review {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--amber);
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .pill.closed, .pill.rejected {
+      background: rgba(255, 77, 109, 0.15);
+      color: var(--red);
+      border-color: rgba(255, 77, 109, 0.4);
+    }
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #070312;
+      color: var(--ink);
+      outline: none;
+      transition: all 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.45), inset 0 0 6px rgba(0, 240, 255, 0.1);
+    }
+    select option { background: #0d061c; color: #fff; }
     .filters input { flex: 1 1 170px; }
     .filters select { flex: 0 1 155px; }
-    .applicant-name { font-weight: 700; }
-    .applicant-role { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .applicant-name { font-weight: 700; color: #fff; }
+    .applicant-role { color: var(--muted); font-size: 11.5px; margin-top: 4px; }
     .quick-list { display: grid; gap: 13px; }
-    .quick-item { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+    .quick-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 13px;
+      border-bottom: 1px solid var(--line);
+    }
     .quick-item:last-child { border-bottom: 0; padding-bottom: 0; }
-    .quick-item strong { display: block; font-size: 13px; margin-bottom: 4px; }
+    .quick-item strong { display: block; font-size: 13px; margin-bottom: 4px; color: #fff; }
     .quick-item small { color: var(--muted); }
-    dialog { border: 0; border-radius: 16px; width: min(520px,calc(100% - 28px)); padding: 0; box-shadow: 0 24px 70px #11182744; }
-    dialog::backdrop { background: #10182888; }
-    .dialog-head, .dialog-body, .dialog-foot { padding: 19px 22px; }
-    .dialog-head { border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
-    .dialog-body { display: grid; gap: 13px; }
-    .field label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
-    .dialog-foot { display: flex; justify-content: flex-end; gap: 9px; border-top: 1px solid var(--line); }
-    .toast { position: fixed; right: 20px; bottom: 20px; background: #17172d; color: white; padding: 12px 16px; border-radius: 10px; box-shadow: var(--shadow); display: none; z-index: 10; }
-    .empty { text-align: center; color: var(--muted); padding: 22px; }
+    dialog {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      width: min(520px,calc(100% - 28px));
+      padding: 0;
+      background: var(--panel);
+      color: var(--ink);
+      box-shadow: 0 0 50px rgba(121, 40, 202, 0.35), 0 25px 70px #000;
+      backdrop-filter: blur(20px);
+    }
+    dialog::backdrop { background: rgba(6, 2, 14, 0.85); backdrop-filter: blur(6px); }
+    .dialog-head, .dialog-body, .dialog-foot { padding: 20px 24px; }
+    .dialog-head {
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dialog-body { display: grid; gap: 14px; }
+    .field label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .dialog-foot { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--line); }
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: rgba(14, 8, 30, 0.95);
+      border: 1px solid var(--neon-cyan);
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      display: none;
+      z-index: 10;
+    }
+    .empty { text-align: center; color: var(--muted); padding: 24px; }
     @media (max-width: 1000px) { .stats { grid-template-columns: repeat(2,minmax(0,1fr)); } .content-grid { grid-template-columns: 1fr; } }
-    @media (max-width: 650px) { .layout { grid-template-columns: 1fr; } aside { padding: 14px; } .logo { padding: 0 8px 14px; } .nav { grid-template-columns: repeat(3,1fr); } .nav-label, .side-note { display: none; } .nav a { text-align: center; padding: 10px 5px; font-size: 12px; } main { padding: 20px 13px; } .topbar { align-items: flex-start; } .company .company-name { display: none; } .stats { gap: 9px; } .stat { padding: 13px; } .stat-value { font-size: 25px; } .panel { padding: 13px; } }
+    @media (max-width: 650px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { padding: 16px; border-right: none; border-bottom: 1px solid var(--line); }
+      .logo { padding: 0 8px 16px; }
+      .nav { grid-template-columns: repeat(3,1fr); }
+      .nav-label, .side-note { display: none; }
+      .nav a { text-align: center; padding: 10px 5px; font-size: 12px; }
+      main { padding: 22px 14px; }
+      .topbar { align-items: flex-start; }
+      .company .company-name { display: none; }
+      .stats { gap: 10px; }
+      .stat { padding: 14px; }
+      .stat-value { font-size: 26px; }
+      .panel { padding: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, body::after, .button, .stat {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -131,88 +461,244 @@
     <form id="jobForm">
       <div class="dialog-head"><h2>Create a job posting</h2><button type="button" class="button secondary small" id="closeJob" aria-label="Close">Close</button></div>
       <div class="dialog-body">
-        <div class="field"><label for="jobTitle">Job title</label><input id="jobTitle" name="jobTitle" required maxlength="90" placeholder="e.g. Frontend Developer"></div>
-        <div class="field"><label for="jobType">Employment type</label><select id="jobType" name="jobType"><option>Full-time</option><option>Part-time</option><option>Internship</option><option>Contract</option></select></div>
-        <div class="field"><label for="jobLocation">Location</label><input id="jobLocation" name="jobLocation" maxlength="100" placeholder="e.g. Pune / Remote"></div>
+        <div class="field"><label for="jobTitle">Job title *</label><input id="jobTitle" name="jobTitle" required maxlength="90" placeholder="e.g. Full Stack Developer"></div>
+        <div class="field"><label for="jobSkills">Required Skills *</label><input id="jobSkills" name="jobSkills" required maxlength="150" placeholder="e.g. Python, Flask, React, SQL"></div>
+        <div class="field"><label for="jobLocation">Location</label><input id="jobLocation" name="jobLocation" maxlength="100" placeholder="e.g. Bangalore (Hybrid) or Remote"></div>
+        <div class="field"><label for="jobSalary">Salary Range</label><input id="jobSalary" name="jobSalary" maxlength="80" placeholder="e.g. ₹8,00,000 - ₹12,00,000"></div>
+        <div class="field"><label for="jobType">Employment type</label><select id="jobType" name="jobType"><option>Full-time</option><option>Remote</option><option>Part-time</option><option>Internship</option><option>Contract</option></select></div>
+        <div class="field"><label for="jobDesc">Job Description</label><textarea id="jobDesc" name="jobDesc" rows="3" placeholder="Brief role overview and expectations..."></textarea></div>
       </div>
-      <div class="dialog-foot"><button type="button" class="button secondary" id="cancelJob">Cancel</button><button class="button" type="submit">Create preview job</button></div>
+      <div class="dialog-foot"><button type="button" class="button secondary" id="cancelJob">Cancel</button><button class="button" type="submit" id="submitJobBtn">Publish Job</button></div>
     </form>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
-    // Demo-only data. Replace these arrays with backend API calls in a later integration step.
-    const jobs = [
-      { title: "Frontend Developer", type: "Full-time", applicants: 42, status: "Open" },
-      { title: "Backend Engineer", type: "Full-time", applicants: 36, status: "Open" },
-      { title: "UI/UX Designer", type: "Contract", applicants: 28, status: "Open" },
-      { title: "Data Analyst Intern", type: "Internship", applicants: 22, status: "Open" }
-    ];
-    const applicants = [
-      { name: "Aarav Sharma", role: "Frontend Developer", match: 94, status: "Shortlisted" },
-      { name: "Ananya Patel", role: "Backend Engineer", match: 89, status: "Interview" },
-      { name: "Rohan Mehta", role: "Frontend Developer", match: 86, status: "Review" },
-      { name: "Isha Kulkarni", role: "UI/UX Designer", match: 82, status: "Applied" },
-      { name: "Kabir Desai", role: "Data Analyst Intern", match: 78, status: "Rejected" }
-    ];
+    let companyJobs = [];
+    let companyApplicants = [];
     const $ = (id) => document.getElementById(id);
-    const escapeHTML = (value) => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
-    const statusClass = (status) => ({ Open:"open", Shortlisted:"shortlisted", Interview:"open", Review:"review", Rejected:"rejected", Closed:"closed" }[status] || "");
+    const escapeHTML = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+    const statusClass = (status) => {
+      const s = String(status || "").toLowerCase();
+      if (s === "open" || s === "accepted" || s === "shortlisted") return "open";
+      if (s === "reviewed" || s === "review") return "review";
+      if (s === "rejected" || s === "closed") return "rejected";
+      return "review";
+    };
+
     function showToast(message) {
       const toast = $("toast"); toast.textContent = message; toast.style.display = "block";
-      window.clearTimeout(showToast.timer); showToast.timer = window.setTimeout(() => toast.style.display = "none", 2600);
+      window.clearTimeout(showToast.timer); showToast.timer = window.setTimeout(() => toast.style.display = "none", 3000);
     }
+
+    async function loadCompanyJobs() {
+      try {
+        const res = await fetch("/api/company/jobs", { credentials: "same-origin" });
+        if (!res.ok) return;
+        companyJobs = await res.json();
+        renderJobs();
+      } catch (err) {
+        console.warn("Failed to load company jobs", err);
+      }
+    }
+
+    async function loadCompanyApplicants() {
+      try {
+        const res = await fetch("/api/company/applicants", { credentials: "same-origin" });
+        if (!res.ok) return;
+        companyApplicants = await res.json();
+        renderApplicants();
+      } catch (err) {
+        console.warn("Failed to load company applicants", err);
+      }
+    }
+
     function renderJobs() {
-      $("jobsBody").innerHTML = jobs.map((job, index) => `<tr>
-        <td><strong>${escapeHTML(job.title)}</strong></td><td>${escapeHTML(job.type)}</td><td>${job.applicants}</td>
-        <td><span class="pill ${statusClass(job.status)}">${escapeHTML(job.status)}</span></td>
-        <td><button class="button secondary small" data-job-action="${index}">${job.status === "Open" ? "Close job" : "Reopen"}</button></td></tr>`).join("");
-      $("activeJobs").textContent = jobs.filter(j => j.status === "Open").length;
+      const tbody = $("jobsBody");
+      if (!tbody) return;
+      if (!companyJobs.length) {
+        tbody.innerHTML = '<tr><td class="empty" colspan="5">No jobs posted yet. Click "+ Create job" to publish one!</td></tr>';
+        $("activeJobs").textContent = "0";
+        return;
+      }
+
+      tbody.innerHTML = companyJobs.map(job => {
+        const isOpen = Boolean(job.is_active);
+        const statusTxt = isOpen ? "Open" : "Closed";
+        return `<tr>
+          <td><strong>${escapeHTML(job.title)}</strong><div class="applicant-role">${escapeHTML(job.location || "Remote")} · ${escapeHTML(job.salary_range || "")}</div></td>
+          <td>${escapeHTML(job.skills_required || "General")}</td>
+          <td>${job.applicants_count || 0}</td>
+          <td><span class="pill ${statusClass(statusTxt)}">${statusTxt}</span></td>
+          <td><button class="button secondary small" data-toggle-job="${job.id}">${isOpen ? "Close job" : "Reopen"}</button></td>
+        </tr>`;
+      }).join("");
+
+      $("activeJobs").textContent = companyJobs.filter(j => j.is_active).length;
     }
+
     function renderApplicants() {
       const term = $("searchApplicants").value.trim().toLowerCase();
-      const filter = $("statusFilter").value;
-      const shown = applicants.filter(a => (!term || `${a.name} ${a.role}`.toLowerCase().includes(term)) && (!filter || a.status === filter));
-      $("applicantsBody").innerHTML = shown.length ? shown.map(a => {
-        const index = applicants.indexOf(a);
-        return `<tr><td><div class="applicant-name">${escapeHTML(a.name)}</div><div class="applicant-role">Candidate</div></td>
-          <td>${escapeHTML(a.role)}</td><td>${a.match}%</td><td><span class="pill ${statusClass(a.status)}">${escapeHTML(a.status)}</span></td>
-          <td><select data-applicant-status="${index}" aria-label="Update ${escapeHTML(a.name)} status">
-            ${["Applied","Review","Shortlisted","Interview","Rejected"].map(s => `<option ${a.status === s ? "selected" : ""}>${s}</option>`).join("")}</select></td></tr>`;
-      }).join("") : '<tr><td class="empty" colspan="5">No applicants match your search.</td></tr>';
-      $("shortlistedCount").textContent = applicants.filter(a => a.status === "Shortlisted").length;
-      $("interviewCount").textContent = applicants.filter(a => a.status === "Interview").length;
-      $("shortlistedBadge").textContent = $("shortlistedCount").textContent;
-      $("interviewBadge").textContent = $("interviewCount").textContent;
-      $("totalApplications").textContent = applicants.length + jobs.reduce((sum, job) => sum + job.applicants, 0);
+      const filter = $("statusFilter").value.toLowerCase();
+
+      const shown = companyApplicants.filter(a => {
+        const text = `${a.candidate_name || ""} ${a.job_title || ""} ${a.skills_str || ""}`.toLowerCase();
+        const matchesTerm = !term || text.includes(term);
+        const st = String(a.status || "").toLowerCase();
+        const matchesFilter = !filter || st === filter || (filter === "shortlisted" && st === "accepted");
+        return matchesTerm && matchesFilter;
+      });
+
+      const tbody = $("applicantsBody");
+      if (!tbody) return;
+
+      if (!shown.length) {
+        tbody.innerHTML = '<tr><td class="empty" colspan="5">No candidates have applied yet. Newly submitted applications will appear here instantly.</td></tr>';
+      } else {
+        tbody.innerHTML = shown.map(a => {
+          const st = String(a.status || "pending").toLowerCase();
+          const matchScore = a.match_score ?? 75;
+          return `<tr>
+            <td>
+              <div class="applicant-name">${escapeHTML(a.candidate_name || "Applicant")}</div>
+              <div class="applicant-role">${escapeHTML(a.candidate_email || "")} · ${escapeHTML(a.degree || "")}</div>
+            </td>
+            <td><strong>${escapeHTML(a.job_title || "Job")}</strong></td>
+            <td><strong style="color:var(--neon-cyan)">${matchScore}%</strong></td>
+            <td><span class="pill ${statusClass(st)}">${escapeHTML(st.toUpperCase())}</span></td>
+            <td>
+              <select data-app-id="${a.application_id}" aria-label="Update candidate status">
+                <option value="pending" ${st === "pending" ? "selected" : ""}>Pending</option>
+                <option value="review" ${st === "review" || st === "reviewed" ? "selected" : ""}>Review</option>
+                <option value="accepted" ${st === "accepted" || st === "shortlisted" ? "selected" : ""}>Shortlist / Accept</option>
+                <option value="rejected" ${st === "rejected" ? "selected" : ""}>Reject</option>
+              </select>
+            </td>
+          </tr>`;
+        }).join("");
+      }
+
+      const totalApps = companyApplicants.length;
+      const acceptedCount = companyApplicants.filter(a => a.status === "accepted" || a.status === "shortlisted").length;
+      const reviewCount = companyApplicants.filter(a => a.status === "reviewed" || a.status === "review").length;
+
+      $("totalApplications").textContent = totalApps;
+      $("shortlistedCount").textContent = acceptedCount;
+      $("interviewCount").textContent = reviewCount;
+      $("shortlistedBadge").textContent = acceptedCount;
+      $("interviewBadge").textContent = reviewCount;
     }
-    function renderAll() { renderJobs(); renderApplicants(); }
-    $("jobsBody").addEventListener("click", event => {
-      const button = event.target.closest("[data-job-action]"); if (!button) return;
-      const job = jobs[Number(button.dataset.jobAction)]; job.status = job.status === "Open" ? "Closed" : "Open";
-      renderJobs(); showToast(`${job.title}: ${job.status.toLowerCase()}. Demo only.`);
+
+    async function renderAll() {
+      await Promise.all([loadCompanyJobs(), loadCompanyApplicants()]);
+    }
+
+    $("jobsBody").addEventListener("click", async event => {
+      const button = event.target.closest("[data-toggle-job]");
+      if (!button) return;
+      const jobId = button.dataset.toggleJob;
+      button.disabled = true;
+      try {
+        const res = await fetch(`/api/company/jobs/${jobId}/toggle`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (res.ok) {
+          showToast("Job status updated!");
+          await loadCompanyJobs();
+        }
+      } catch (err) {
+        showToast("Failed to toggle job.");
+      } finally {
+        button.disabled = false;
+      }
     });
-    $("applicantsBody").addEventListener("change", event => {
-      const select = event.target.closest("[data-applicant-status]"); if (!select) return;
-      applicants[Number(select.dataset.applicantStatus)].status = select.value;
-      renderApplicants(); showToast("Applicant status updated in this preview only.");
+
+    $("applicantsBody").addEventListener("change", async event => {
+      const select = event.target.closest("[data-app-id]");
+      if (!select) return;
+      const appId = select.dataset.appId;
+      const newStatus = select.value;
+      try {
+        const res = await fetch(`/api/company/applications/${appId}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (res.ok) {
+          showToast(`Applicant marked as ${newStatus.toUpperCase()}`);
+          await loadCompanyApplicants();
+        } else {
+          showToast("Failed to update applicant status.");
+        }
+      } catch (err) {
+        showToast("Error updating status.");
+      }
     });
+
     $("searchApplicants").addEventListener("input", renderApplicants);
     $("statusFilter").addEventListener("change", renderApplicants);
+
     const dialog = $("jobDialog");
     const openDialog = () => dialog.showModal();
     $("openJob").addEventListener("click", openDialog);
     $("openJob2").addEventListener("click", openDialog);
     $("closeJob").addEventListener("click", () => dialog.close());
     $("cancelJob").addEventListener("click", () => dialog.close());
-    $("jobForm").addEventListener("submit", event => {
+
+    $("jobForm").addEventListener("submit", async event => {
       event.preventDefault();
-      const title = $("jobTitle").value.trim(); if (!title) return;
-      jobs.unshift({ title, type: $("jobType").value, applicants: 0, status: "Open" });
-      $("jobForm").reset(); dialog.close(); renderJobs();
-      showToast("Job added to this preview only; it was not saved to the database.");
+      const title = $("jobTitle").value.trim();
+      const skills = $("jobSkills").value.trim();
+      const location = $("jobLocation").value.trim();
+      const salary = $("jobSalary").value.trim();
+      const desc = $("jobDesc").value.trim();
+      const submitBtn = $("submitJobBtn");
+
+      if (!title) {
+        alert("Please enter a job title.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Publishing...";
+
+      try {
+        const res = await fetch("/api/jobs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: title,
+            skills_required: skills,
+            location: location || "Remote",
+            salary_range: salary || "Competitive",
+            description: desc
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to create job.");
+        }
+
+        $("jobForm").reset();
+        dialog.close();
+        showToast("Job published! It is now live on the candidate portal.");
+        await renderAll();
+      } catch (err) {
+        alert("Error publishing job: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Publish Job";
+      }
     });
+
+    // Initial load
     renderAll();
+
+    // Auto-refresh every 4 seconds and on focus so new applications & jobs reflect instantly!
+    setInterval(renderAll, 4000);
+    window.addEventListener("focus", renderAll);
   </script>
 </body>
 </html>

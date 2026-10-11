@@ -461,6 +461,19 @@ CREATE TABLE IF NOT EXISTS skill_passports (
   CONSTRAINT fk_passport_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS candidate_projects (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  tech_stack VARCHAR(500),
+  live_url VARCHAR(255),
+  github_url VARCHAR(255),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_project_user (user_id),
+  CONSTRAINT fk_project_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT IGNORE INTO skills(name) VALUES
 ('Python'),('C++'),('C'),('Java'),('JavaScript'),('HTML'),('CSS'),('SQL'),('MySQL'),('Data Structures & Algorithms'),('Machine Learning'),('Data Analysis'),('Git & GitHub'),('Flask');
 

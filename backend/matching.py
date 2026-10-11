@@ -281,6 +281,23 @@ def match_candidate_to_job(candidate: dict, job: dict) -> dict[str, Any]:
     else:
         raw_score = overall_sim
 
+    # Practical experience weighting (verified projects boost)
+    projects = candidate.get("projects") or []
+    practical_matched = set()
+    practical_bonus = 0.0
+
+    if projects and job_skills:
+        for proj in projects:
+            p_text = f"{proj.get('title', '')} {proj.get('tech_stack', '')} {proj.get('description', '')}".lower()
+            for js in job_skills:
+                if js.lower() in p_text:
+                    practical_matched.add(js)
+
+        if practical_matched:
+            # +5% per skill applied in a real project, up to +15% practical boost
+            practical_bonus = min(0.15, len(practical_matched) * 0.05)
+            raw_score = min(1.0, raw_score + practical_bonus)
+
     # Penalty if mandatory criteria fail
     if not is_eligible:
         raw_score = min(raw_score, 0.45)
@@ -306,6 +323,10 @@ def match_candidate_to_job(candidate: dict, job: dict) -> dict[str, Any]:
 
     if matched_skills:
         explanation_parts.append(f"Strong overlap in: {', '.join(matched_skills)}.")
+    if practical_matched:
+        explanation_parts.append(
+            f"Practical Experience Boost (+{round(practical_bonus * 100, 1)}%): Demonstrated hands-on implementation of {', '.join(sorted(practical_matched))} across portfolio projects."
+        )
     if missing_skills:
         explanation_parts.append(f"Recommended areas to develop: {', '.join(missing_skills)}.")
 
@@ -324,7 +345,10 @@ def match_candidate_to_job(candidate: dict, job: dict) -> dict[str, Any]:
         "missing_skills": missing_skills,
         "explanation": explanation,
         "learning_recommendations": recommendations,
-        "skill_breakdown": gap_analysis["skill_breakdown"]
+        "skill_breakdown": gap_analysis["skill_breakdown"],
+        "practical_boost": round(practical_bonus * 100, 1),
+        "practical_skills": sorted(list(practical_matched)),
+        "projects_count": len(projects)
     }
 
 
@@ -361,6 +385,77 @@ def rank_jobs_for_candidate(candidate: dict, jobs: list[dict]) -> list[dict]:
 
     scored.sort(key=lambda x: (x["is_eligible"], x["match_score"]), reverse=True)
     return scored
+
+
+# ── 7. Dynamic "What-If" Skill Simulator ──────────────────────────────
+
+def simulate_what_if_match(
+    candidate: dict,
+    jobs: list[dict],
+    simulated_skills: list[str]
+) -> dict[str, Any]:
+    """
+    Simulates how adding or upskilling specific skills affects match scores
+    and unlocks new job opportunities across all active openings.
+    """
+    sim_skills_clean = _normalize_skill_list(simulated_skills)
+    cand_existing_skills = _normalize_skill_list(candidate.get("skills") or [])
+
+    # Create simulated candidate profile with combined skills
+    combined_skills = list(dict.fromkeys(cand_existing_skills + sim_skills_clean))
+    sim_candidate = dict(candidate)
+    sim_candidate["skills"] = combined_skills
+
+    comparisons = []
+    unlocked_count = 0
+    total_delta = 0.0
+
+    for job in jobs:
+        baseline = match_candidate_to_job(candidate, job)
+        simulated = match_candidate_to_job(sim_candidate, job)
+
+        delta = round(simulated["match_percentage"] - baseline["match_percentage"], 1)
+        total_delta += delta
+
+        newly_matched = [s for s in simulated["matched_skills"] if s not in baseline["matched_skills"]]
+
+        is_unlocked = (
+            (baseline["match_tier"] == "Low Match" and simulated["match_tier"] in ("Moderate Match", "Strong Match")) or
+            (delta >= 15.0)
+        )
+        if is_unlocked:
+            unlocked_count += 1
+
+        comparisons.append({
+            "job_id": job.get("id"),
+            "job_title": job.get("title"),
+            "company_name": job.get("company_name", "Company"),
+            "location": job.get("location"),
+            "salary_range": job.get("salary_range"),
+            "baseline_score": baseline["match_percentage"],
+            "baseline_tier": baseline["match_tier"],
+            "simulated_score": simulated["match_percentage"],
+            "simulated_tier": simulated["match_tier"],
+            "score_delta": delta,
+            "is_unlocked": is_unlocked,
+            "newly_matched_skills": newly_matched,
+            "remaining_missing": simulated["missing_skills"],
+            "explanation": simulated["explanation"],
+            "learning_recommendations": simulated["learning_recommendations"]
+        })
+
+    # Sort comparisons by highest score improvement first
+    comparisons.sort(key=lambda x: (x["score_delta"], x["simulated_score"]), reverse=True)
+
+    avg_boost = round(total_delta / max(1, len(jobs)), 1)
+
+    return {
+        "simulated_skills": sim_skills_clean,
+        "total_jobs": len(jobs),
+        "unlocked_count": unlocked_count,
+        "average_boost": avg_boost,
+        "comparisons": comparisons
+    }
 
 
 # ── Self-Test / Verification ──────────────────────────────────────────
