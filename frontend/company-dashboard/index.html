@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="VORTEXA company recruitment dashboard">
+  <title>VORTEXA | Company Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#" aria-label="VORTEXA home">
+        <span class="brand-mark">V</span>
+        <span><strong>VORTEXA</strong><small>HIRING WORKSPACE</small></span>
+      </a>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <button class="nav-item active" data-view="overview"><span class="nav-icon">▦</span>Overview</button>
+        <button class="nav-item" data-view="jobs"><span class="nav-icon">▤</span>Job postings</button>
+        <button class="nav-item" data-view="applicants"><span class="nav-icon">♙</span>Applicants</button>
+        <button class="nav-item" data-view="interviews"><span class="nav-icon">◷</span>Interviews</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="help-card"><span class="help-icon">?</span><strong>Need a hand?</strong><p>Keep your hiring process moving with VORTEXA.</p><button id="helpButton" class="text-button">Help centre ↗</button></div>
+        <div class="profile-mini"><div class="avatar avatar-purple">AC</div><div class="profile-copy"><strong>Acme Company</strong><span>Company workspace</span></div><span class="profile-dots">•••</span></div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Toggle navigation">☰</button>
+        <div class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumbCurrent">Overview</strong></div>
+        <div class="top-actions"><span class="demo-badge">DEMO DATA</span><button class="icon-button" id="notificationButton" aria-label="Notifications">♧<i></i></button><div class="avatar avatar-purple top-avatar">AC</div></div>
+      </header>
+
+      <section class="page-content">
+        <div class="welcome-row">
+          <div><p class="eyebrow" id="todayLabel">COMPANY WORKSPACE</p><h1 id="pageTitle">Good morning, Acme team <span>✦</span></h1><p class="subtitle" id="pageSubtitle">Here’s what’s happening with your hiring pipeline today.</p></div>
+          <button class="primary-button" id="createJobButton"><span>＋</span> Create a job</button>
+        </div>
+
+        <div class="notice" role="status"><span class="notice-symbol">ⓘ</span><span>This is a front-end preview with sample data. Changes are kept in this browser only and are not saved to a backend.</span><button id="dismissNotice" aria-label="Dismiss notice">×</button></div>
+
+        <section class="stats-grid" aria-label="Hiring statistics">
+          <article class="stat-card"><div class="stat-top"><span>Active job posts</span><span class="stat-icon icon-blue">▤</span></div><div class="stat-number" id="activeJobsCount">8</div><div class="stat-foot"><span class="trend positive">↗ 2</span><span>vs. last month</span></div></article>
+          <article class="stat-card"><div class="stat-top"><span>Total applicants</span><span class="stat-icon icon-violet">♙</span></div><div class="stat-number" id="applicantsCount">246</div><div class="stat-foot"><span class="trend positive">↗ 18%</span><span>vs. last month</span></div></article>
+          <article class="stat-card"><div class="stat-top"><span>Shortlisted</span><span class="stat-icon icon-green">✓</span></div><div class="stat-number" id="shortlistedCount">32</div><div class="stat-foot"><span class="trend positive">↗ 6</span><span>this week</span></div></article>
+          <article class="stat-card"><div class="stat-top"><span>Interviews scheduled</span><span class="stat-icon icon-orange">◷</span></div><div class="stat-number" id="interviewsCount">14</div><div class="stat-foot"><span class="trend neutral">Next 7 days</span></div></article>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel jobs-panel" id="jobsPanel">
+            <div class="panel-heading"><div><h2>Recent job postings</h2><p>Keep track of your open roles.</p></div><button class="text-button" data-go="jobs">View all jobs →</button></div>
+            <div class="table-wrap"><table><thead><tr><th>JOB TITLE</th><th>APPLICANTS</th><th>STATUS</th><th></th></tr></thead><tbody id="jobsTableBody"></tbody></table></div>
+            <div class="empty-state hidden" id="jobsEmpty">No jobs match your search.</div>
+          </article>
+
+          <article class="panel pipeline-panel">
+            <div class="panel-heading"><div><h2>Applicant pipeline</h2><p>Where candidates are right now.</p></div><span class="small-pill">This month</span></div>
+            <div class="pipeline-total"><strong>246</strong><span>total applicants</span></div>
+            <div class="pipeline-bars" id="pipelineBars"></div>
+            <div class="pipeline-note"><span class="note-dot"></span>Review new applications regularly to keep candidates moving.</div>
+          </article>
+        </section>
+
+        <section class="panel applicants-panel" id="applicantsPanel">
+          <div class="panel-heading applicants-heading"><div><h2>Recent applicants</h2><p>Review candidate activity and update their status.</p></div><div class="applicant-tools"><label class="search-box"><span>⌕</span><input id="applicantSearch" type="search" placeholder="Search applicants..." aria-label="Search applicants"></label><select id="statusFilter" aria-label="Filter by status"><option value="all">All statuses</option><option value="New">New</option><option value="Shortlisted">Shortlisted</option><option value="Interview">Interview</option><option value="Rejected">Rejected</option></select></div></div>
+          <div class="table-wrap"><table><thead><tr><th>CANDIDATE</th><th>APPLIED FOR</th><th>APPLIED</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody id="applicantsTableBody"></tbody></table></div>
+          <div class="empty-state hidden" id="applicantsEmpty">No applicants match these filters.</div>
+        </section>
+        <footer class="page-footer"><span>© <span id="year"></span> VORTEXA</span><span>Company hiring workspace <b>•</b> Front-end preview</span></footer>
+      </section>
+    </main>
+  </div>
+
+  <dialog class="modal" id="jobModal">
+    <form id="jobForm" method="dialog">
+      <div class="modal-heading"><div><p class="eyebrow">JOB MANAGEMENT</p><h2>Create a job posting</h2></div><button type="button" class="close-button" id="closeJobModal" aria-label="Close">×</button></div>
+      <label class="field-label" for="jobTitleInput">Job title</label><input class="form-input" id="jobTitleInput" name="title" required maxlength="80" placeholder="e.g. Frontend Developer">
+      <label class="field-label" for="departmentInput">Department</label><select class="form-input" id="departmentInput" name="department"><option>Engineering</option><option>Design</option><option>Product</option><option>Marketing</option><option>People & Culture</option><option>Operations</option></select>
+      <label class="field-label" for="locationInput">Location</label><input class="form-input" id="locationInput" name="location" maxlength="80" placeholder="e.g. Pune / Remote">
+      <label class="field-label" for="employmentInput">Employment type</label><select class="form-input" id="employmentInput" name="employment"><option>Full-time</option><option>Part-time</option><option>Contract</option><option>Internship</option></select>
+      <p class="form-note">Preview only: this posting will not be sent to a server.</p>
+      <div class="modal-actions"><button type="button" class="secondary-button" id="cancelJobButton">Cancel</button><button type="submit" class="primary-button">Add preview job</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
