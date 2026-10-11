@@ -1,0 +1,35 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+backend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database dumps (never commit real data)
+*.sql.gz
+*.dump
+
+# Aiven SSL certificate (contains private key material, never commit)
+ca.pem
+backend/ca.pem
+# Local virtual environment
+backend/.venv/

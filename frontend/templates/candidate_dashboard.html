@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEXA | Candidate Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/candidate_dashboard.css') }}">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <h2 class="logo">VORTEXA</h2>
+        <p class="portal">CANDIDATE PORTAL</p>
+
+        <nav>
+            <a href="#dashboard" class="active">Dashboard</a>
+            <a href="#profile">My Profile</a>
+            <a href="#passport">Skill Passport</a>
+            <a href="#jobs">Find Jobs</a>
+            <a href="#matches">Job Matches</a>
+            <a href="#applications">My Applications</a>
+            <a href="#assessments">Skill Assessments</a>
+        </nav>
+
+        <a href="/logout" class="logout">Logout</a>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <h1 id="welcome">Candidate Dashboard</h1>
+                <p>Manage your skills, discover opportunities, and grow your career.</p>
+            </div>
+
+            <div class="user-info">
+                <div class="avatar" id="userAvatar">C</div>
+                <div>
+                    <strong id="candidateName">Candidate</strong>
+                    <p>Candidate</p>
+                </div>
+            </div>
+        </header>
+
+        <section id="dashboard">
+            <div class="welcome-card">
+                <div>
+                    <h2>Welcome to VORTEXA!</h2>
+                    <p>
+                        Build your skill profile, discover relevant jobs,
+                        and connect with companies.
+                    </p>
+                    <a href="#profile" class="primary-btn">Complete Your Profile</a>
+                </div>
+                <div class="welcome-icon">🚀</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span>Profile Completion</span>
+                    <h2 id="profileCompletion">0%</h2>
+                    <div class="progress">
+                        <div id="profileProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <span>Job Matches</span>
+                    <h2 id="matchCount">0</h2>
+                    <p>Relevant opportunities</p>
+                </div>
+
+                <div class="stat-card">
+                    <span>Applications</span>
+                    <h2 id="applicationCount">0</h2>
+                    <p>Jobs you have applied for</p>
+                </div>
+
+                <div class="stat-card">
+                    <span>Verified Skills</span>
+                    <h2 id="skillCount">0</h2>
+                    <p>Skills in your profile</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="profile" class="panel">
+            <div class="section-heading">
+                <div>
+                    <h2>My Profile</h2>
+                    <p>Keep your professional information updated.</p>
+                </div>
+                <button class="secondary-btn" id="editProfileBtn">Edit Profile</button>
+            </div>
+
+            <form id="profileForm">
+                <div class="form-grid">
+                    <div class="form-group"><label for="fullName">Full Name</label><input type="text" id="fullName" required maxlength="150" autocomplete="name"></div>
+                    <div class="form-group"><label for="email">Email Address</label><input type="email" id="email" required autocomplete="email"></div>
+                    <div class="form-group"><label for="phone">Phone Number</label><input type="tel" id="phone" maxlength="20" autocomplete="tel"></div>
+                    <div class="form-group"><label for="degree">Degree</label><select id="degree" required><option value="">Select degree</option></select></div>
+                    <div class="form-group"><label for="branch">Branch / Specialization</label><select id="branch" required><option value="">Select branch</option></select></div>
+                    <div class="form-group"><label for="college">Pune College</label><select id="college" required><option value="">Select college</option></select></div>
+                    <div class="form-group"><label for="graduationYear">Graduation Year</label><input type="number" id="graduationYear" min="2020" max="2100" placeholder="e.g. 2028"></div>
+                    <div class="form-group"><label for="experience">Experience</label><input type="text" id="experience" placeholder="Fresher / internship experience" maxlength="150"></div>
+                    <div class="form-group full-width"><label for="skillSelect">Add skills</label><div style="display:flex;gap:10px;flex-wrap:wrap"><select id="skillSelect" style="flex:1;min-width:220px"><option value="">Select a skill</option></select><button type="button" class="secondary-btn" id="addSkillBtn">Add skill</button></div><div id="selectedSkills" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"></div><input type="hidden" id="skills" value=""></div>
+                    <div class="form-group full-width"><label for="bio">Career Goals / Bio</label><textarea id="bio" rows="4" maxlength="3000" placeholder="Tell employers about your goals"></textarea></div>
+                    <input type="hidden" id="education" value="">
+                </div>
+                <p id="profileMessage" class="message" role="status" aria-live="polite"></p>
+                <button type="submit" class="primary-btn" id="saveProfileBtn">Save Profile</button>
+            </form>
+        </section>
+
+        <section id="passport" class="panel">
+            <div class="section-heading">
+                <div>
+                    <h2>TalentX Skill Passport</h2>
+                    <p>Your professional skills and assessment achievements.</p>
+                </div>
+                <span class="badge" id="passportStatus">Not Verified</span>
+            </div>
+
+            <div class="passport-content">
+                <div class="passport-icon">🎓</div>
+                <div>
+                    <h3>Your skills, your opportunities.</h3>
+                    <p id="passportDescription">
+                        Complete the required verification and skill assessments
+                        to unlock your Skill Passport.
+                    </p>
+                    <a href="#assessments" class="secondary-btn">
+                        Go to Assessments
+                    </a>
+                    <p id="passportCode" aria-live="polite"></p>
+                    <div id="passportSkills"></div>
+                    <p id="passportCode" aria-live="polite"></p>
+                    <div id="passportSkills"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="jobs" class="panel">
+            <div class="section-heading">
+                <div>
+                    <h2>Find Jobs</h2>
+                    <p>Explore opportunities posted by companies.</p>
+                </div>
+                <button class="secondary-btn" id="refreshJobsBtn">Refresh Jobs</button>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" id="jobSearch"
+                       placeholder="Search by job title, company, or skill">
+                <button class="primary-btn" id="searchJobsBtn">Search</button>
+            </div>
+
+            <div id="jobsList" class="job-list">
+                <p class="empty-state">Loading available jobs...</p>
+            </div>
+        </section>
+
+        <section id="matches" class="panel">
+            <div class="section-heading">
+                <div>
+                    <h2>Recommended Job Matches</h2>
+                    <p>Explore jobs that align with your skills and qualifications.</p>
+                </div>
+            </div>
+
+            <div id="matchesList" class="job-list">
+                <p class="empty-state">Your recommended jobs will appear here.</p>
+            </div>
+        </section>
+
+        <section id="applications" class="panel">
+            <div class="section-heading">
+                <div>
+                    <h2>My Applications</h2>
+                    <p>Track the progress of your job applications.</p>
+                </div>
+                <button class="secondary-btn" id="refreshApplicationsBtn">
+                    Refresh
+                </button>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Job Title</th>
+                            <th>Company</th>
+                            <th>Applied On</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="applicationsList">
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                Loading applications...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="assessments" class="panel">
+            <div class="section-heading">
+                <div>
+                    <h2>Skill Assessments</h2>
+                    <p>Assess your skills to demonstrate your capabilities.</p>
+                </div>
+            </div>
+
+            <div class="assessment-card">
+                <div class="assessment-icon">🧠</div>
+                <div>
+                    <h3>Skill Verification</h3>
+                    <p>
+                        Complete the available assessments to demonstrate
+                        your proficiency in relevant skills.
+                    </p>
+                    <button class="primary-btn" id="assessmentBtn">
+                        View Assessments
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>© 2026 VORTEXA | Skills to Opportunities</p>
+        </footer>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='js/candidate_dashboard.js') }}"></script>
+</body>
+</html>

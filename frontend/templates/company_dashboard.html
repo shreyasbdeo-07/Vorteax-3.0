@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VORTEXA | Company Dashboard</title>
+  <style>
+    :root {
+      --bg: #f4f7fb; --panel: #fff; --ink: #182230; --muted: #667085;
+      --line: #e5eaf1; --brand: #5145cd; --brand-dark: #3d34a8;
+      --green: #16845b; --amber: #a65d03; --red: #b42318;
+      --shadow: 0 10px 30px rgba(24,34,48,.06);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--ink); }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .layout { display: grid; grid-template-columns: 245px minmax(0,1fr); min-height: 100vh; }
+    aside { background: #17172d; color: #fff; padding: 26px 17px; }
+    .logo { font-size: 22px; font-weight: 800; letter-spacing: 2px; padding: 0 12px 32px; }
+    .logo span { color: #a8a1ff; }
+    .nav-label { color: #aaaac2; font-size: 11px; text-transform: uppercase; letter-spacing: 1.4px; padding: 0 12px 10px; }
+    .nav { display: grid; gap: 7px; }
+    .nav a { text-decoration: none; color: #d9d9e8; padding: 12px; border-radius: 9px; display: block; }
+    .nav a.active, .nav a:hover { color: #fff; background: #37345f; }
+    .side-note { margin: 38px 8px 0; padding: 14px; background: #252541; border-radius: 12px; color: #d0d0e4; font-size: 12px; line-height: 1.6; }
+    main { min-width: 0; padding: 28px clamp(16px,3vw,38px); }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+    .eyebrow { color: var(--muted); font-size: 13px; margin: 0 0 5px; }
+    h1 { font-size: clamp(25px,3vw,32px); margin: 0; letter-spacing: -.7px; }
+    .company { display: flex; align-items: center; gap: 10px; font-weight: 650; }
+    .avatar { width: 38px; height: 38px; border-radius: 12px; background: #e8e5ff; color: var(--brand); display: grid; place-items: center; font-weight: 800; }
+    .button { border: 0; background: var(--brand); color: white; padding: 11px 15px; border-radius: 9px; font-weight: 650; }
+    .button:hover { background: var(--brand-dark); }
+    .button.secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+    .button.small { padding: 7px 10px; font-size: 12px; }
+    .stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; margin-bottom: 24px; }
+    .card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+    .stat { padding: 19px; }
+    .stat-label { color: var(--muted); font-size: 13px; }
+    .stat-value { font-size: 30px; font-weight: 780; margin: 12px 0 5px; }
+    .stat-hint { font-size: 12px; color: var(--muted); }
+    .content-grid { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(290px,1fr); gap: 20px; }
+    .panel { padding: 20px; min-width: 0; margin-bottom: 20px; }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+    h2 { margin: 0; font-size: 17px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; background: #fafbfc; }
+    th, td { padding: 13px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .pill { display: inline-block; border-radius: 99px; padding: 5px 9px; font-size: 11px; font-weight: 700; background: #eef2f6; color: #475467; }
+    .pill.open, .pill.shortlisted { background: #e7f7ef; color: var(--green); }
+    .pill.review { background: #fff4df; color: var(--amber); }
+    .pill.closed, .pill.rejected { background: #feeceb; color: var(--red); }
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    input, select, textarea { width: 100%; padding: 10px 11px; border: 1px solid #d6dce5; border-radius: 8px; background: #fff; color: var(--ink); }
+    .filters input { flex: 1 1 170px; }
+    .filters select { flex: 0 1 155px; }
+    .applicant-name { font-weight: 700; }
+    .applicant-role { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .quick-list { display: grid; gap: 13px; }
+    .quick-item { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+    .quick-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .quick-item strong { display: block; font-size: 13px; margin-bottom: 4px; }
+    .quick-item small { color: var(--muted); }
+    dialog { border: 0; border-radius: 16px; width: min(520px,calc(100% - 28px)); padding: 0; box-shadow: 0 24px 70px #11182744; }
+    dialog::backdrop { background: #10182888; }
+    .dialog-head, .dialog-body, .dialog-foot { padding: 19px 22px; }
+    .dialog-head { border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+    .dialog-body { display: grid; gap: 13px; }
+    .field label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+    .dialog-foot { display: flex; justify-content: flex-end; gap: 9px; border-top: 1px solid var(--line); }
+    .toast { position: fixed; right: 20px; bottom: 20px; background: #17172d; color: white; padding: 12px 16px; border-radius: 10px; box-shadow: var(--shadow); display: none; z-index: 10; }
+    .empty { text-align: center; color: var(--muted); padding: 22px; }
+    @media (max-width: 1000px) { .stats { grid-template-columns: repeat(2,minmax(0,1fr)); } .content-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 650px) { .layout { grid-template-columns: 1fr; } aside { padding: 14px; } .logo { padding: 0 8px 14px; } .nav { grid-template-columns: repeat(3,1fr); } .nav-label, .side-note { display: none; } .nav a { text-align: center; padding: 10px 5px; font-size: 12px; } main { padding: 20px 13px; } .topbar { align-items: flex-start; } .company .company-name { display: none; } .stats { gap: 9px; } .stat { padding: 13px; } .stat-value { font-size: 25px; } .panel { padding: 13px; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="logo">VORTE<span>XA</span></div>
+      <div class="nav-label">Company workspace</div>
+      <nav class="nav" aria-label="Company navigation">
+        <a class="active" href="#overview">Overview</a>
+        <a href="#jobs">Job postings</a>
+        <a href="#applicants">Applicants</a>
+      </nav>
+      <div class="side-note"><strong>Company workspace</strong><br>Manage job posts and review applicants from one place.<br><br><span>Preview mode · Sample data</span></div>
+    </aside>
+    <main>
+      <header class="topbar">
+        <div><p class="eyebrow">Company portal / Overview</p><h1>Company Dashboard</h1></div>
+        <div class="company"><div class="avatar">VX</div><span class="company-name">VORTEXA Company</span><button class="button" id="openJob">+ Create job</button></div>
+      </header>
+
+      <section id="overview" class="stats" aria-label="Dashboard statistics">
+        <article class="card stat"><div class="stat-label">Active jobs</div><div class="stat-value" id="activeJobs">4</div><div class="stat-hint">Currently accepting applications</div></article>
+        <article class="card stat"><div class="stat-label">Total applications</div><div class="stat-value" id="totalApplications">128</div><div class="stat-hint">Across all job postings</div></article>
+        <article class="card stat"><div class="stat-label">Shortlisted</div><div class="stat-value" id="shortlistedCount">23</div><div class="stat-hint">Applicants selected for next steps</div></article>
+        <article class="card stat"><div class="stat-label">Interviews</div><div class="stat-value" id="interviewCount">8</div><div class="stat-hint">Candidates in interview stage</div></article>
+      </section>
+
+      <div class="content-grid">
+        <section id="jobs" class="panel">
+          <div class="panel-head"><div><h2>Recent job postings</h2><div class="muted">Manage the roles your company is hiring for</div></div><button class="button secondary small" id="openJob2">+ Add job</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Role</th><th>Type</th><th>Applicants</th><th>Status</th><th>Action</th></tr></thead><tbody id="jobsBody"></tbody></table></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h2>Hiring activity</h2><div class="muted">Sample summary</div></div></div>
+          <div class="quick-list">
+            <div class="quick-item"><div><strong>Application review</strong><small>Review new candidate submissions</small></div><span class="pill review">12 new</span></div>
+            <div class="quick-item"><div><strong>Shortlisted candidates</strong><small>Ready for the next hiring step</small></div><span class="pill shortlisted" id="shortlistedBadge">23</span></div>
+            <div class="quick-item"><div><strong>Interviews scheduled</strong><small>Upcoming candidate interviews</small></div><span class="pill open" id="interviewBadge">8</span></div>
+          </div>
+        </section>
+      </div>
+
+      <section id="applicants" class="panel">
+        <div class="panel-head"><div><h2>Applicants</h2><div class="muted">Search and update sample applicant statuses</div></div></div>
+        <div class="filters"><input id="searchApplicants" type="search" placeholder="Search name, role, or job…" aria-label="Search applicants"><select id="statusFilter" aria-label="Filter by status"><option value="">All statuses</option><option>Applied</option><option>Review</option><option>Shortlisted</option><option>Interview</option><option>Rejected</option></select></div>
+        <div class="table-wrap"><table><thead><tr><th>Candidate</th><th>Applied for</th><th>Match</th><th>Status</th><th>Update status</th></tr></thead><tbody id="applicantsBody"></tbody></table></div>
+      </section>
+      <p class="muted">This is a frontend preview using sample data. It is not connected to the backend or shared MySQL database yet.</p>
+    </main>
+  </div>
+
+  <dialog id="jobDialog">
+    <form id="jobForm">
+      <div class="dialog-head"><h2>Create a job posting</h2><button type="button" class="button secondary small" id="closeJob" aria-label="Close">Close</button></div>
+      <div class="dialog-body">
+        <div class="field"><label for="jobTitle">Job title</label><input id="jobTitle" name="jobTitle" required maxlength="90" placeholder="e.g. Frontend Developer"></div>
+        <div class="field"><label for="jobType">Employment type</label><select id="jobType" name="jobType"><option>Full-time</option><option>Part-time</option><option>Internship</option><option>Contract</option></select></div>
+        <div class="field"><label for="jobLocation">Location</label><input id="jobLocation" name="jobLocation" maxlength="100" placeholder="e.g. Pune / Remote"></div>
+      </div>
+      <div class="dialog-foot"><button type="button" class="button secondary" id="cancelJob">Cancel</button><button class="button" type="submit">Create preview job</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // Demo-only data. Replace these arrays with backend API calls in a later integration step.
+    const jobs = [
+      { title: "Frontend Developer", type: "Full-time", applicants: 42, status: "Open" },
+      { title: "Backend Engineer", type: "Full-time", applicants: 36, status: "Open" },
+      { title: "UI/UX Designer", type: "Contract", applicants: 28, status: "Open" },
+      { title: "Data Analyst Intern", type: "Internship", applicants: 22, status: "Open" }
+    ];
+    const applicants = [
+      { name: "Aarav Sharma", role: "Frontend Developer", match: 94, status: "Shortlisted" },
+      { name: "Ananya Patel", role: "Backend Engineer", match: 89, status: "Interview" },
+      { name: "Rohan Mehta", role: "Frontend Developer", match: 86, status: "Review" },
+      { name: "Isha Kulkarni", role: "UI/UX Designer", match: 82, status: "Applied" },
+      { name: "Kabir Desai", role: "Data Analyst Intern", match: 78, status: "Rejected" }
+    ];
+    const $ = (id) => document.getElementById(id);
+    const escapeHTML = (value) => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+    const statusClass = (status) => ({ Open:"open", Shortlisted:"shortlisted", Interview:"open", Review:"review", Rejected:"rejected", Closed:"closed" }[status] || "");
+    function showToast(message) {
+      const toast = $("toast"); toast.textContent = message; toast.style.display = "block";
+      window.clearTimeout(showToast.timer); showToast.timer = window.setTimeout(() => toast.style.display = "none", 2600);
+    }
+    function renderJobs() {
+      $("jobsBody").innerHTML = jobs.map((job, index) => `<tr>
+        <td><strong>${escapeHTML(job.title)}</strong></td><td>${escapeHTML(job.type)}</td><td>${job.applicants}</td>
+        <td><span class="pill ${statusClass(job.status)}">${escapeHTML(job.status)}</span></td>
+        <td><button class="button secondary small" data-job-action="${index}">${job.status === "Open" ? "Close job" : "Reopen"}</button></td></tr>`).join("");
+      $("activeJobs").textContent = jobs.filter(j => j.status === "Open").length;
+    }
+    function renderApplicants() {
+      const term = $("searchApplicants").value.trim().toLowerCase();
+      const filter = $("statusFilter").value;
+      const shown = applicants.filter(a => (!term || `${a.name} ${a.role}`.toLowerCase().includes(term)) && (!filter || a.status === filter));
+      $("applicantsBody").innerHTML = shown.length ? shown.map(a => {
+        const index = applicants.indexOf(a);
+        return `<tr><td><div class="applicant-name">${escapeHTML(a.name)}</div><div class="applicant-role">Candidate</div></td>
+          <td>${escapeHTML(a.role)}</td><td>${a.match}%</td><td><span class="pill ${statusClass(a.status)}">${escapeHTML(a.status)}</span></td>
+          <td><select data-applicant-status="${index}" aria-label="Update ${escapeHTML(a.name)} status">
+            ${["Applied","Review","Shortlisted","Interview","Rejected"].map(s => `<option ${a.status === s ? "selected" : ""}>${s}</option>`).join("")}</select></td></tr>`;
+      }).join("") : '<tr><td class="empty" colspan="5">No applicants match your search.</td></tr>';
+      $("shortlistedCount").textContent = applicants.filter(a => a.status === "Shortlisted").length;
+      $("interviewCount").textContent = applicants.filter(a => a.status === "Interview").length;
+      $("shortlistedBadge").textContent = $("shortlistedCount").textContent;
+      $("interviewBadge").textContent = $("interviewCount").textContent;
+      $("totalApplications").textContent = applicants.length + jobs.reduce((sum, job) => sum + job.applicants, 0);
+    }
+    function renderAll() { renderJobs(); renderApplicants(); }
+    $("jobsBody").addEventListener("click", event => {
+      const button = event.target.closest("[data-job-action]"); if (!button) return;
+      const job = jobs[Number(button.dataset.jobAction)]; job.status = job.status === "Open" ? "Closed" : "Open";
+      renderJobs(); showToast(`${job.title}: ${job.status.toLowerCase()}. Demo only.`);
+    });
+    $("applicantsBody").addEventListener("change", event => {
+      const select = event.target.closest("[data-applicant-status]"); if (!select) return;
+      applicants[Number(select.dataset.applicantStatus)].status = select.value;
+      renderApplicants(); showToast("Applicant status updated in this preview only.");
+    });
+    $("searchApplicants").addEventListener("input", renderApplicants);
+    $("statusFilter").addEventListener("change", renderApplicants);
+    const dialog = $("jobDialog");
+    const openDialog = () => dialog.showModal();
+    $("openJob").addEventListener("click", openDialog);
+    $("openJob2").addEventListener("click", openDialog);
+    $("closeJob").addEventListener("click", () => dialog.close());
+    $("cancelJob").addEventListener("click", () => dialog.close());
+    $("jobForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const title = $("jobTitle").value.trim(); if (!title) return;
+      jobs.unshift({ title, type: $("jobType").value, applicants: 0, status: "Open" });
+      $("jobForm").reset(); dialog.close(); renderJobs();
+      showToast("Job added to this preview only; it was not saved to the database.");
+    });
+    renderAll();
+  </script>
+</body>
+</html>
