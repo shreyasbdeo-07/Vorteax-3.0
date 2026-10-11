@@ -1,0 +1,623 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RozgarLink | Authentication</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Inter, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #f5f7fb;
+      color: #182235;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      width: 100%;
+      max-width: 1000px;
+      min-height: 620px;
+      background: white;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(20, 40, 80, 0.1);
+    }
+
+    .hero {
+      padding: 44px 36px;
+      color: white;
+      background: linear-gradient(145deg, #102b55, #245f9e);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-size: 25px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+    }
+
+    .brand span {
+      color: #8ed8ff;
+    }
+
+    .hero h1 {
+      font-size: clamp(30px, 4vw, 43px);
+      line-height: 1.15;
+      margin-bottom: 18px;
+    }
+
+    .hero p {
+      line-height: 1.8;
+      color: #d8e7f8;
+      font-size: 14px;
+    }
+
+    .hero-note {
+      border-top: 1px solid #ffffff35;
+      padding-top: 20px;
+      font-size: 12px;
+      color: #d8e7f8;
+    }
+
+    .content {
+      padding: 42px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .eyebrow {
+      color: #2463a5;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #718096;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .role-card {
+      border: 1px solid #dce3ed;
+      border-radius: 14px;
+      padding: 22px 14px;
+      text-align: left;
+      background: white;
+      cursor: pointer;
+      transition: 0.2s;
+      color: #182235;
+    }
+
+    .role-card:hover {
+      border-color: #2463a5;
+      background: #f4f8ff;
+      transform: translateY(-2px);
+    }
+
+    .role-icon {
+      font-size: 29px;
+      margin-bottom: 15px;
+    }
+
+    .role-card strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 7px;
+    }
+
+    .role-card small {
+      display: block;
+      color: #718096;
+      line-height: 1.5;
+    }
+
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 23px;
+    }
+
+    .back-btn {
+      border: none;
+      background: transparent;
+      color: #2463a5;
+      cursor: pointer;
+      font-weight: 700;
+      padding: 5px 0;
+    }
+
+    .role-label {
+      font-size: 12px;
+      background: #eaf3ff;
+      color: #205a9a;
+      padding: 7px 11px;
+      border-radius: 20px;
+      font-weight: 700;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #f0f3f8;
+      padding: 5px;
+      border-radius: 10px;
+      margin-bottom: 22px;
+    }
+
+    .tab {
+      border: none;
+      padding: 11px;
+      border-radius: 7px;
+      cursor: pointer;
+      background: transparent;
+      color: #66758b;
+      font-weight: 700;
+    }
+
+    .tab.active {
+      background: white;
+      color: #205a9a;
+      box-shadow: 0 2px 8px #172b4d12;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #35445b;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #dce3ed;
+      border-radius: 9px;
+      font-size: 13px;
+      outline: none;
+      background: white;
+      color: #182235;
+    }
+
+    input:focus, select:focus {
+      border-color: #2463a5;
+      box-shadow: 0 0 0 3px #2463a51a;
+    }
+
+    .primary-btn {
+      width: 100%;
+      margin-top: 22px;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      background: #205a9a;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .primary-btn:hover {
+      background: #174779;
+    }
+
+    .primary-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .message {
+      margin-top: 14px;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .message.error { color: #bd3030; }
+    .message.success { color: #18794e; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 760px) {
+      body { padding: 12px; }
+
+      .layout {
+        grid-template-columns: 1fr;
+        max-width: 480px;
+      }
+
+      .hero {
+        padding: 25px;
+        gap: 25px;
+      }
+
+      .hero h1 { font-size: 30px; }
+      .hero-note { display: none; }
+      .content { padding: 28px 22px; }
+    }
+
+    @media (max-width: 380px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .role-grid { gap: 8px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="layout">
+    <aside class="hero">
+      <div class="brand">Rozgar<span>Link</span></div>
+
+      <div>
+        <h1>Skills that connect.<br>Opportunities that matter.</h1>
+        <p>
+          A smarter way to connect assessed skills with real opportunities.
+          Find the right people or discover roles that fit your potential.
+        </p>
+      </div>
+
+      <div class="hero-note">
+        A skills-first opportunity matching platform.
+      </div>
+    </aside>
+
+    <section class="content">
+      <!-- STEP 1: ROLE SELECTION -->
+      <div id="roleScreen">
+        <div class="eyebrow">Welcome to RozgarLink</div>
+        <h2>Get started</h2>
+        <p class="subtitle">
+          Select how you want to use the platform.
+        </p>
+
+        <div class="role-grid">
+          <button class="role-card" type="button"
+                  onclick="selectRole('candidate')">
+            <div class="role-icon">🎓</div>
+            <strong>Candidate</strong>
+            <small>Build your profile and discover opportunities.</small>
+          </button>
+
+          <button class="role-card" type="button"
+                  onclick="selectRole('company')">
+            <div class="role-icon">🏢</div>
+            <strong>Company</strong>
+            <small>Find candidates with the skills your team needs.</small>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: LOGIN / REGISTER -->
+      <div id="authScreen" class="hidden">
+        <div class="topline">
+          <button type="button" class="back-btn" onclick="goBack()">
+            ← Change role
+          </button>
+          <span id="roleBadge" class="role-label"></span>
+        </div>
+
+        <div class="eyebrow">Your next opportunity starts here</div>
+        <h2 id="formTitle">Welcome back</h2>
+        <p id="formSubtitle" class="subtitle">
+          Log in to continue.
+        </p>
+
+        <div class="tabs">
+          <button type="button" id="loginTab"
+                  class="tab active" onclick="setMode('login')">
+            Login
+          </button>
+          <button type="button" id="registerTab"
+                  class="tab" onclick="setMode('register')">
+            Register
+          </button>
+        </div>
+
+        <form id="authForm">
+          <div id="fields" class="form-grid"></div>
+
+          <button type="submit" id="submitBtn" class="primary-btn">
+            Login
+          </button>
+
+          <p id="message" class="message" role="status"
+             aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let selectedRole = "";
+    let currentMode = "login";
+
+    const roleScreen = document.getElementById("roleScreen");
+    const authScreen = document.getElementById("authScreen");
+    const fields = document.getElementById("fields");
+    const form = document.getElementById("authForm");
+    const message = document.getElementById("message");
+    const submitBtn = document.getElementById("submitBtn");
+
+    function selectRole(role) {
+      selectedRole = role;
+      currentMode = "login";
+
+      roleScreen.classList.add("hidden");
+      authScreen.classList.remove("hidden");
+
+      document.getElementById("roleBadge").textContent =
+        role === "company" ? "🏢 Company" : "🎓 Candidate";
+
+      renderForm();
+    }
+
+    function goBack() {
+      authScreen.classList.add("hidden");
+      roleScreen.classList.remove("hidden");
+      message.textContent = "";
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+
+      document.getElementById("loginTab")
+        .classList.toggle("active", mode === "login");
+
+      document.getElementById("registerTab")
+        .classList.toggle("active", mode === "register");
+
+      renderForm();
+    }
+
+    function inputField(name, label, type = "text",
+                        required = true, full = false) {
+      const id = "field_" + name;
+
+      return `
+        <div class="field ${full ? "full" : ""}">
+          <label for="${id}">${label}</label>
+          <input
+            id="${id}"
+            name="${name}"
+            type="${type}"
+            ${required ? "required" : ""}
+            ${type === "password" ? 'minlength="8"' : ""}
+            autocomplete="${type === "password"
+              ? (name === "confirm_password"
+                  ? "new-password"
+                  : currentMode === "login"
+                    ? "current-password"
+                    : "new-password")
+              : name === "email"
+                ? "email"
+                : name === "phone"
+                  ? "tel"
+                  : "off"}"
+          >
+        </div>
+      `;
+    }
+
+    function renderForm() {
+      const isRegister = currentMode === "register";
+      const isCompany = selectedRole === "company";
+
+      document.getElementById("formTitle").textContent =
+        isRegister
+          ? (isCompany ? "Register your company" : "Create your profile")
+          : "Welcome back";
+
+      document.getElementById("formSubtitle").textContent =
+        isRegister
+          ? "Enter your details to create an account."
+          : "Log in to continue to your dashboard.";
+
+      message.textContent = "";
+      message.className = "message";
+
+      let html = "";
+
+      if (isRegister && isCompany) {
+        html += inputField("company_name", "Company name", "text", true, true);
+        html += inputField("contact_person", "Contact person");
+        html += inputField("industry", "Industry");
+        html += inputField("website", "Company website", "url", false);
+        html += inputField("location", "Company location");
+        html += `
+          <div class="field">
+            <label for="field_company_size">Company size</label>
+            <select id="field_company_size" name="company_size" required>
+              <option value="">Select size</option>
+              <option value="1-10">1–10 employees</option>
+              <option value="11-50">11–50 employees</option>
+              <option value="51-200">51–200 employees</option>
+              <option value="201-500">201–500 employees</option>
+              <option value="500+">500+ employees</option>
+            </select>
+          </div>
+        `;
+      }
+
+      if (isRegister && !isCompany) {
+        html += inputField("name", "Full name", "text", true, true);
+        html += inputField("college", "College / University", "text", true, true);
+        html += inputField("degree", "Degree / Branch");
+        html += inputField("graduation_year", "Graduation year", "number");
+      }
+
+      if (!isRegister) {
+        html += inputField("email", "Email address", "email", true, true);
+      } else {
+        html += inputField("email", "Work email address", "email", true, true);
+      }
+
+      html += inputField("phone", "Phone number", "tel", true, true);
+
+      html += inputField(
+        "password",
+        "Password (minimum 8 characters)",
+        "password",
+        true,
+        true
+      );
+
+      if (isRegister) {
+        html += inputField(
+          "confirm_password",
+          "Confirm password",
+          "password",
+          true,
+          true
+        );
+      }
+
+      fields.innerHTML = html;
+
+      submitBtn.textContent = isRegister
+        ? (isCompany ? "Create company account" : "Create candidate account")
+        : "Login";
+    }
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      message.textContent = "";
+      message.className = "message";
+
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      if (currentMode === "register" &&
+          data.password !== data.confirm_password) {
+        message.textContent = "Passwords do not match.";
+        message.classList.add("error");
+        return;
+      }
+
+      if (data.phone && !/^[0-9+\-\s()]{7,20}$/.test(data.phone)) {
+        message.textContent = "Please enter a valid phone number.";
+        message.classList.add("error");
+        return;
+      }
+
+      if (currentMode === "register" &&
+          selectedRole === "candidate" &&
+          (!Number.isInteger(Number(data.graduation_year)) ||
+           Number(data.graduation_year) < 2020 ||
+           Number(data.graduation_year) > 2100)) {
+        message.textContent = "Please enter a valid graduation year.";
+        message.classList.add("error");
+        return;
+      }
+
+      delete data.confirm_password;
+      data.role = selectedRole;
+
+      const endpoint = currentMode === "register"
+        ? "/api/auth/register"
+        : "/api/auth/login";
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Please wait...";
+
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(
+            result.message || result.error ||
+            "Unable to complete your request."
+          );
+        }
+
+        message.textContent = result.message ||
+          (currentMode === "register"
+            ? "Account created successfully."
+            : "Login successful.");
+
+        message.classList.add("success");
+
+        // Use the redirect supplied by your backend when available.
+        if (result.redirect_url) {
+          window.location.href = result.redirect_url;
+        } else if (currentMode === "login") {
+          // Change these paths to match your actual dashboard routes.
+          window.location.href = selectedRole === "company"
+            ? "/company/dashboard"
+            : "/candidate/dashboard";
+        } else {
+          // After registration, show the login form.
+          setMode("login");
+        }
+
+      } catch (error) {
+        message.textContent = error.message ||
+          "Could not connect to the server. Please try again.";
+        message.classList.add("error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = currentMode === "register"
+          ? (selectedRole === "company"
+              ? "Create company account"
+              : "Create candidate account")
+          : "Login";
+      }
+    });
+  </script>
+</body>
+</html>
