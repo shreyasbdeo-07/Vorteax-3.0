@@ -57,10 +57,6 @@ def run_migrations():
                                    if line.strip() and not line.strip().startswith("--")),
                                   "SQL statement")
                 print(f"OK: {first_line[:90]}")
-        with conn.cursor() as cursor:
-            cursor.execute("SHOW COLUMNS FROM assessment_questions LIKE 'difficulty'")
-            if not cursor.fetchone():
-                cursor.execute("ALTER TABLE assessment_questions ADD COLUMN difficulty ENUM('EASY','MEDIUM','HARD') NOT NULL DEFAULT 'MEDIUM' AFTER marks")
         conn.commit()
         print(f"Migration complete. Database '{DB_NAME}' is ready.")
     except Exception as exc:

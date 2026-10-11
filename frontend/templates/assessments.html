@@ -1,1 +1,229 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>VORTEXA | Skill Assessment</title><link rel="stylesheet" href="{{ url_for('static', filename='css/candidate_dashboard.css') }}"><style>.assessment-wrap{max-width:1000px;margin:35px auto;padding:24px}.assessment-item{padding:18px;margin:14px 0;border:1px solid #dbe2ea;border-radius:12px}.assessment-item label{display:block;margin:8px 0}.muted{color:#64748b}.result{padding:16px;border-radius:12px;background:#eefbf3;margin-top:18px}.qmeta{font-size:.82rem;font-weight:700;color:#475569}.proctor{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:14px;border:1px solid #dbe2ea;border-radius:12px;margin:12px 0}.proctor video{width:190px;max-width:100%;border-radius:8px;background:#111}.warning{color:#9a3412;font-size:.9rem}</style></head><body><main class="assessment-wrap"><a href="/candidate/dashboard">← Back to dashboard</a><h1>Skill Assessments</h1><p class="muted">Assess only the skills saved in your profile. Questions are selected by the server; correct answers are not sent to the browser. Each attempt has a 15-minute server-enforced limit.</p><section id="assessmentPicker"><h2>Your selected skills</h2><div id="assessmentList">Loading...</div></section><section id="testArea" hidden><h2 id="testTitle"></h2><p id="assessmentRules">10 questions · 50 marks · 15 minutes</p><p>Time remaining: <strong id="timer">15:00</strong></p><section class="proctor"><div><video id="cameraPreview" autoplay muted playsinline></video></div><div><strong>Proctoring status</strong><p id="proctorStatus" class="warning">Camera permission is required for this assessment. Browser checks detect tab switching; they cannot physically prevent it.</p><p class="muted">Camera frames are processed in your browser by BlazeFace and COCO-SSD; this starter implementation does not upload or store video.</p></div></section><form id="testForm"><div id="questions"></div><button class="primary-btn" type="submit">Submit assessment</button></form></section><div id="result" class="result" hidden></div><script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script><script src="{{ url_for('static', filename='js/assessments.js') }}"></script></main></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VORTEXA | Skill Assessment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/candidate_dashboard.css') }}?v=3.5">
+  <style>
+    .assessment-wrap {
+      max-width: 1000px;
+      margin: 35px auto;
+      padding: 34px 38px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: relative;
+      z-index: 2;
+    }
+    .assessment-wrap a {
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--secondary);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 14px;
+      transition: 0.2s;
+    }
+    .assessment-wrap a:hover {
+      color: #fff;
+      text-shadow: 0 0 10px var(--secondary);
+      transform: translateX(-2px);
+    }
+    .assessment-wrap h1 {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #fff;
+      margin: 8px 0 6px;
+      text-shadow: 0 0 14px rgba(255, 255, 255, 0.2);
+    }
+    .assessment-wrap h2 {
+      font-family: var(--font-display);
+      font-size: 21px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #fff;
+      margin: 20px 0 12px;
+    }
+    .assessment-item {
+      padding: 20px;
+      margin: 16px 0;
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .assessment-item:hover {
+      border-color: rgba(0, 240, 255, 0.35);
+    }
+    .assessment-item h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .assessment-item label {
+      display: block;
+      margin: 10px 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      color: #cbd5e1;
+      font-size: 14px;
+      transition: all 0.15s ease;
+    }
+    .assessment-item label:hover {
+      color: #fff;
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.3);
+    }
+    .assessment-item input[type="radio"] {
+      margin-right: 8px;
+      accent-color: var(--secondary);
+    }
+    .qmeta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--secondary);
+      margin-bottom: 10px;
+      padding: 3px 10px;
+      background: rgba(0, 240, 255, 0.1);
+      border-radius: 6px;
+      border: 1px solid rgba(0, 240, 255, 0.25);
+    }
+    .proctor {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 18px;
+      border: 1px solid rgba(255, 0, 85, 0.3);
+      border-radius: 14px;
+      margin: 18px 0;
+      background: rgba(255, 0, 85, 0.05);
+      box-shadow: 0 0 20px rgba(255, 0, 85, 0.1);
+    }
+    .proctor video {
+      width: 200px;
+      height: 140px;
+      object-fit: cover;
+      max-width: 100%;
+      border-radius: 10px;
+      background: #090d16;
+      border: 1px solid var(--secondary);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+    }
+    .proctor-info {
+      flex: 1;
+      min-width: 250px;
+    }
+    .warning {
+      color: #ff3366;
+      font-size: 13.5px;
+      font-weight: 500;
+      margin: 6px 0;
+      line-height: 1.5;
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+    .result {
+      padding: 24px 28px;
+      border-radius: 14px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--secondary);
+      color: #fff;
+      margin-top: 24px;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
+    }
+    .result h2 {
+      color: var(--secondary);
+      font-family: var(--font-display);
+      margin-top: 0;
+    }
+    .result p {
+      margin: 8px 0;
+      font-size: 15px;
+    }
+    .result a {
+      margin-top: 14px;
+      display: inline-block;
+      padding: 10px 20px;
+      background: var(--primary);
+      color: #fff !important;
+      border-radius: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      box-shadow: var(--neon-glow-pink);
+    }
+    #timer {
+      color: var(--primary);
+      font-size: 20px;
+      letter-spacing: 1px;
+      text-shadow: var(--neon-glow-pink);
+    }
+  </style>
+</head>
+<body>
+  <main class="assessment-wrap">
+    <a href="/candidate/dashboard">← Back to dashboard</a>
+    <h1>Skill Assessments</h1>
+    <p class="muted">Assess only the skills saved in your profile. Questions are dynamically served by the system; correct answers are securely verified on the server. Each 50-mark attempt has a 15-minute server-enforced limit with live AI proctoring.</p>
+
+    <section id="assessmentPicker">
+      <h2>Your selected skills</h2>
+      <div id="assessmentList">Loading skills...</div>
+    </section>
+
+    <section id="testArea" hidden>
+      <h2 id="testTitle"></h2>
+      <p id="assessmentRules" style="color: var(--secondary); font-weight: 600; margin-bottom: 6px;">10 questions · Easy 3×3 marks, Medium 4×5 marks, Hard 3×7 marks · Total 50 · 15 minutes</p>
+      <p style="font-size: 15px;">Time remaining: <strong id="timer">15:00</strong></p>
+
+      <section class="proctor">
+        <div>
+          <video id="cameraPreview" autoplay muted playsinline></video>
+        </div>
+        <div class="proctor-info">
+          <strong style="color: #fff; font-family: var(--font-display); letter-spacing: 0.6px; font-size: 16px;">AI PROCTORING ACTIVE</strong>
+          <p id="proctorStatus" class="warning">Camera permission is required. Fullscreen exit and tab switching are strictly monitored (max 3 violations).</p>
+          <p class="muted">On-device BlazeFace & COCO-SSD checks run locally in your browser. Video is never uploaded to the cloud.</p>
+        </div>
+      </section>
+
+      <form id="testForm">
+        <div id="questions"></div>
+        <button class="primary-btn" type="submit" style="margin-top: 15px; padding: 12px 30px; font-size: 15px;">Submit Assessment</button>
+      </form>
+    </section>
+
+    <div id="result" class="result" hidden></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/assessments.js') }}?v=3.5"></script>
+  </main>
+</body>
+</html>

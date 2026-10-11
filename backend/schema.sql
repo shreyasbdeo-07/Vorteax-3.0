@@ -86,8 +86,7 @@ CREATE TABLE IF NOT EXISTS assessment_questions (
   option_c VARCHAR(500) NOT NULL,
   option_d VARCHAR(500) NOT NULL,
   correct_option CHAR(1) NOT NULL,
-  marks SMALLINT UNSIGNED NOT NULL DEFAULT 5,
-  difficulty ENUM('EASY','MEDIUM','HARD') NOT NULL DEFAULT 'MEDIUM',
+  marks SMALLINT UNSIGNED NOT NULL DEFAULT 10,
   active TINYINT(1) NOT NULL DEFAULT 1,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_questions_skill_active (skill_id, active),
@@ -239,8 +238,7 @@ CREATE TABLE IF NOT EXISTS assessment_questions (
   option_c VARCHAR(500) NOT NULL,
   option_d VARCHAR(500) NOT NULL,
   correct_option CHAR(1) NOT NULL,
-  marks SMALLINT UNSIGNED NOT NULL DEFAULT 5,
-  difficulty ENUM('EASY','MEDIUM','HARD') NOT NULL DEFAULT 'MEDIUM',
+  marks SMALLINT UNSIGNED NOT NULL DEFAULT 10,
   active TINYINT(1) NOT NULL DEFAULT 1,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_questions_skill_active (skill_id, active),
@@ -392,8 +390,7 @@ CREATE TABLE IF NOT EXISTS assessment_questions (
   option_c VARCHAR(500) NOT NULL,
   option_d VARCHAR(500) NOT NULL,
   correct_option CHAR(1) NOT NULL,
-  marks SMALLINT UNSIGNED NOT NULL DEFAULT 5,
-  difficulty ENUM('EASY','MEDIUM','HARD') NOT NULL DEFAULT 'MEDIUM',
+  marks SMALLINT UNSIGNED NOT NULL DEFAULT 10,
   active TINYINT(1) NOT NULL DEFAULT 1,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_questions_skill_active (skill_id, active),
@@ -464,6 +461,19 @@ CREATE TABLE IF NOT EXISTS skill_passports (
   CONSTRAINT fk_passport_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS candidate_projects (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  tech_stack VARCHAR(500),
+  live_url VARCHAR(255),
+  github_url VARCHAR(255),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_project_user (user_id),
+  CONSTRAINT fk_project_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT IGNORE INTO skills(name) VALUES
 ('Python'),('C++'),('C'),('Java'),('JavaScript'),('HTML'),('CSS'),('SQL'),('MySQL'),('Data Structures & Algorithms'),('Machine Learning'),('Data Analysis'),('Git & GitHub'),('Flask');
 
@@ -498,16 +508,3 @@ INSERT INTO assessment_questions(skill_id,question_text,option_a,option_b,option
 SELECT s.id,'Which method converts JSON text into an object?','JSON.stringify','JSON.parse','JSON.object','JSON.read','B',10 FROM skills s WHERE s.name='JavaScript' AND (SELECT COUNT(*) FROM assessment_questions q WHERE q.skill_id=s.id)<2;
 INSERT INTO assessment_questions(skill_id,question_text,option_a,option_b,option_c,option_d,correct_option,marks)
 SELECT s.id,'Which array method adds an item to the end?','pop','shift','push','slice','C',10 FROM skills s WHERE s.name='JavaScript' AND (SELECT COUNT(*) FROM assessment_questions q WHERE q.skill_id=s.id)<3;
-
-
-CREATE TABLE IF NOT EXISTS assessment_proctor_events (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  attempt_id BIGINT UNSIGNED NOT NULL,
-  user_id INT UNSIGNED NOT NULL,
-  event_type VARCHAR(40) NOT NULL,
-  details VARCHAR(255) NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_proctor_attempt (attempt_id, created_at),
-  CONSTRAINT fk_proctor_attempt FOREIGN KEY (attempt_id) REFERENCES assessment_attempts(id) ON DELETE CASCADE,
-  CONSTRAINT fk_proctor_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

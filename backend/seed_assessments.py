@@ -4,9 +4,7 @@ The quiz is a starter bank intended to be reviewed and expanded by subject exper
 from database import get_connection
 
 SKILLS = ['Python','C++','C','Java','JavaScript','HTML','CSS','SQL','MySQL','Data Structures & Algorithms','Machine Learning','Data Analysis','Git & GitHub','Flask']
-# Carefully authored reusable computer-science questions, classified by difficulty.
-# Skill-specific questions for Python, JavaScript, SQL and HTML are provided below;
-# other tracks receive the core programming fundamentals set and should be customized before production use.
+
 CORE = {
 'EASY': [
 ('Which data structure stores unique values?', 'List', 'Set', 'Tuple', 'String', 'B'),
@@ -52,35 +50,46 @@ SPECIAL = {
 'MEDIUM': [('What does INNER JOIN return?','Rows with matching join keys in both inputs','All rows from left always','All rows from right always','Only unmatched rows','A'),('What is a foreign key for?','Enforce relationship to referenced rows','Encrypt the table','Sort all columns','Make every value unique automatically','A'),('Which clause filters groups after aggregation?','HAVING','WHERE','FROM','LIMIT','A'),('What does COALESCE return?','First non-NULL argument','Last row','Count of NULLs','A random value','A'),('What does a correlated subquery reference?','A column from the outer query','Only constants','No tables','Only indexes','A'),('Why use a transaction?','Group operations into a controlled unit','Format SQL keywords','Create UI components','Automatically remove all duplicates','A'),('What does LEFT JOIN preserve?','All left-side rows','Only right-side rows','Only exact matches','Only unmatched right rows','A'),('What does COUNT(column) ignore?','NULL values','Zero values','Negative values','Duplicate non-NULL values','A'),('What is normalization intended to reduce?','Redundancy and update anomalies','Query syntax','Column types','Access control','A'),('What does LIMIT do in common SQL dialects?','Restricts returned row count','Restricts column width','Locks a table permanently','Adds a constraint','A')],
 'HARD': [('What is a phantom read?','A repeated predicate query sees newly matching rows','A query returns a syntax error','A table loses its primary key','A server changes timezone','A'),('What is the purpose of a composite index?','Index multiple columns in defined order','Encrypt several columns','Join tables automatically','Prevent all table scans in every query','A'),('Why can applying a function to an indexed column hurt performance?','It may prevent use of a simple index lookup','It always improves selectivity','It removes NULL values','It guarantees a covering index','A'),('What does SERIALIZABLE isolation aim to provide?','Behavior equivalent to serial transaction execution','No transaction logging','Unlimited concurrent writes without coordination','Read-only access only','A'),('What is a window function useful for?','Calculations across related rows without collapsing them','Dropping a window/table','Replacing every JOIN','Creating a database user','A'),('What does EXPLAIN commonly show?','Query execution plan','Table data export','User password hash','Database backup content','A'),('What is a deadlock in a database?','Transactions wait on resources held by one another','A query with no WHERE clause','A missing index only','A full disk only','A'),('Why should dynamic SQL values be parameterized?','Prevent injection and separate data from query syntax','Make all queries public','Avoid transactions','Guarantee all queries use indexes','A'),('What is a covering index?','An index containing all columns needed by a query','An index encrypted with TLS','An index on every table by default','A temporary view','A'),('What does a common table expression (CTE) define?','A named query expression for a statement','A permanent table always','A database login','A trigger only','A')]} }
 
-# Fallback banks are fixed MCQs too. The wording remains broadly applicable to software/technical skills.
 def questions_for(skill, level):
     custom = SPECIAL.get(skill, {}).get(level)
     base = CORE[level]
     if custom:
         return custom
-    # Skill-context questions focus on practical concepts common to the selected technical track.
-    out=[]
-    for q,a,b,c,d,correct in base:
-        out.append((q.replace('What is','In '+skill+', what is').replace('Which','For '+skill+', which',1),a,b,c,d,correct))
+    out = []
+    for q, a, b, c, d, correct in base:
+        out.append((q.replace('What is', f'In {skill}, what is').replace('Which', f'For {skill}, which', 1), a, b, c, d, correct))
     return out
 
 def seed():
-    conn=get_connection()
+    conn = get_connection()
     try:
         with conn.cursor() as cur:
             for skill in SKILLS:
-                cur.execute('INSERT INTO skills(name) VALUES(%s) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)',(skill,))
-                skill_id=cur.lastrowid
-                cur.execute('SELECT COUNT(*) AS n FROM assessment_questions WHERE skill_id=%s AND active=1',(skill_id,))
-                if cur.fetchone()['n'] >= 30: continue
-                # Keep any existing starter questions but fill each difficulty tier to 10 questions.
-                for level in ('EASY','MEDIUM','HARD'):
-                    cur.execute('SELECT COUNT(*) AS n FROM assessment_questions WHERE skill_id=%s AND active=1 AND difficulty=%s',(skill_id,level))
-                    count=cur.fetchone()['n']
-                    for question, a,b,c,d,answer in questions_for(skill,level)[count:10]:
-                        marks={'EASY':3,'MEDIUM':5,'HARD':7}[level]
-                        cur.execute('INSERT INTO assessment_questions(skill_id,question_text,option_a,option_b,option_c,option_d,correct_option,marks,difficulty,active) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,1)',(skill_id,question,a,b,c,d,answer,marks,level))
+                cur.execute('SELECT id FROM skills WHERE name = %s', (skill,))
+                row = cur.fetchone()
+                if row:
+                    skill_id = row['id']
+                else:
+                    cur.execute('INSERT INTO skills(name) VALUES(%s)', (skill,))
+                    skill_id = cur.lastrowid
+                
+                cur.execute('SELECT COUNT(*) AS n FROM assessment_questions WHERE skill_id=%s AND active=1', (skill_id,))
+                if int(cur.fetchone()['n'] or 0) >= 30:
+                    continue
+                
+                for level in ('EASY', 'MEDIUM', 'HARD'):
+                    cur.execute('SELECT COUNT(*) AS n FROM assessment_questions WHERE skill_id=%s AND active=1 AND difficulty=%s', (skill_id, level))
+                    count = int(cur.fetchone()['n'] or 0)
+                    for question, a, b, c, d, answer in questions_for(skill, level)[count:10]:
+                        marks = {'EASY': 3, 'MEDIUM': 5, 'HARD': 7}[level]
+                        cur.execute(
+                            'INSERT INTO assessment_questions(skill_id, question_text, option_a, option_b, option_c, option_d, correct_option, marks, difficulty, active) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, 1)',
+                            (skill_id, question, a, b, c, d, answer, marks, level)
+                        )
         conn.commit()
         print('Seeded assessment bank: 30 questions per supported skill (10 each easy/medium/hard).')
-    finally: conn.close()
-if __name__=='__main__': seed()
+    finally:
+        conn.close()
+
+if __name__ == '__main__':
+    seed()

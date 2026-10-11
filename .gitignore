@@ -24,12 +24,15 @@ build/
 .DS_Store
 Thumbs.db
 
-# Database dumps (never commit real data)
+# Database dumps and local SQLite databases (never commit real data)
 *.sql.gz
 *.dump
+*.db
+backend/*.db
 
 # Aiven SSL certificate (contains private key material, never commit)
 ca.pem
 backend/ca.pem
 # Local virtual environment
 backend/.venv/
+
